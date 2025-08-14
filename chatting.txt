@@ -1,0 +1,62 @@
+I see you generated a report. It's very difficult to view the report on video, but what I can see by taking screenshots is 1) the data on the report doesn't correspond with the quotes and 
+2) the sub sections doesn't reflect the detailed info on the quotes.
+
+I understand you want me to believe the project is complete, but unfortunately as much as I want it to be completed it doesn't provide the comparison report as required. 
+Please ask yourself if you are the user of this application, would you pay for it and use it? I'm sure you would agree even the confidence level on the report speaks volumes at 0% confidence. 
+
+Can we please focus on first resolving the 2 issues above. Could you please include a pdf report once these 2 issues have been resolved.
+
+Did you include these in the sections for COMMERCIAL insurance?  Policy Sections:
+Accounts receivable
+Accidental Damage
+Employers' Liability
+Group Personal Accident/Stated Benefits
+Motor Industry Risks
+Houseowners
+Machinery Breakdown
+Householders
+Personal, All Risks
+Watercraft
+Personal Legal Liability
+Deterioration of Stock
+Personal Umbrella Liability
+Greens and Irrigation Systems
+Commercial Umbrella Liability
+Professional Indemnity
+Cyber
+Community & Sectional Title
+Plant All risk
+Contractor All Risk
+Hospitality
+
+
+
+
+Also, You may already know that the team behind LLMWhisperer has also built Unstract. Unstract is an open-source, no-code LLM platform that enables extracting structured information from unstructured documents—all by leveraging LLMs.
+
+Frame 9325
+Purpose-built for prompt engineering
+
+Frame 9373
+Iterate faster: You can see prompts, LLM outputs and sample input documents side-by-side for easy comparison and iteration.
+
+Frame 9365
+Write more powerful prompts: Input documents of the same type can be of different forms and designs. With our Prompt Coverage feature, check how your prompts perform in extracting data from different forms of documents.
+
+Frame 9376
+Enforce output type easily: Just choose the output type you need and we’ll do the needful to enforce it. Text, numbers, dates, JSON, we got you fully covered.
+
+Frame 9368 (1)
+Examine raw input and final results easily: Easily switch views between the native input document, raw input from the text extractor and the final JSON output of your prompts.
+
+Frame 9364
+Prompts-to-production in 2 mins: Take any Prompt Studio project you’ve worked on and deploy it as an API or ETL pipeline to process further unstructured documents of the same type in just 2 mins! No code required.
+
+
+moonie1
+
+Aug 11, 5:09 AM
+Hi Alex, my requirements have beenbthe same from the beginning and I'm simply repeating what I've asked in different ways in the hope you understand better. I don't understand what you mean by 
+"Please clearly state all requirements without any changes." Maybe understand what is required first, then apply the multi agents according to my request. The first part of my request was completed which is the ability to login to dashboard with functions as per pictures. I haven’t tested it all but your video shows you can upload pdfs and click compare. It further seems to create a report in a template which is near to what I have in mind. At this stage I'm assuming the code use Llmwhisperer and multi agents. If that's the case it seems good, however the final stage is getting each agent to take the actual data from each quote and enter it in the columns to compare the quotes. This is the whole point of everything. Putting the quotes data all on one document. Because AI helusionates with too much data, I asked for multiple agents, since tge beginning, to each focus on a single Section. This way that Section Agent have a very specific task towards that section alone and makes the transfer of data more reliable. That's all I wanted from the beginning. My last message with list of Sections is not new, these sections are all in the Demo Report. The demo promt I ded on one section is to show that one AI per Section can provide better data transfer. If I take the final Report and read the data, it should have same as the combined 2 or 3 quotes.
+
+Let me know if something is not clear as I want you to fully understand what the end result should be.
