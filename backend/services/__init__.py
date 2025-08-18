@@ -1,6 +1,6 @@
 # Services package
 from .pdf_extractor import PDFExtractor
-from .quote_processor import QuoteProcessor
-from .report_generator import ReportGenerator
+from .fpdf_report_generator import FPDFReportGenerator
+from .llm_integration import LLMIntegrationService
  
-__all__ = ["PDFExtractor", "QuoteProcessor", "ReportGenerator"] 
+__all__ = ["PDFExtractor", "FPDFReportGenerator", "LLMIntegrationService"] 

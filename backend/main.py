@@ -1,332 +1,299 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
-from fastapi.responses import FileResponse, JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from langgraph.graph import StateGraph, END
-from weasyprint import HTML
-import shutil, os, re, time, requests, uvicorn
-from typing import Dict, List, TypedDict, Optional
-import json
-from datetime import datetime
+#!/usr/bin/env python3
+"""
+Enhanced Insurance Quote Comparison Backend API
+Comprehensive LLMWhisperer + LLM + PDF Report Generation Pipeline
+"""
+
+import os
 import uuid
+import time
+import shutil
+import asyncio
+from datetime import datetime
+from typing import List, Dict, Any, Optional
 from pathlib import Path
 
-# Import config
-from config import settings
+from fastapi import FastAPI, File, UploadFile, HTTPException, Depends, BackgroundTasks
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials  
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel
 
-# Import services
+# Import our enhanced services
+from config import settings
 from services.pdf_extractor import PDFExtractor
-from services.quote_processor import QuoteProcessor
-from services.enhanced_report_generator import EnhancedReportGenerator  # Updated to use enhanced version
+from services.fpdf_report_generator import FPDFReportGenerator
+from services.llm_integration import LLMIntegrationService
 
 # Initialize services
 pdf_extractor = PDFExtractor()
-quote_processor = QuoteProcessor()
-report_generator = EnhancedReportGenerator()  # Updated to use enhanced version
+report_generator = FPDFReportGenerator()
+llm_service = LLMIntegrationService()
 
-# === CONFIG ===
-UPLOAD_DIR = str(settings.UPLOAD_DIR)
-REPORTS_DIR = str(settings.REPORTS_DIR)
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-os.makedirs(REPORTS_DIR, exist_ok=True)
-
-# Security
-security = HTTPBearer()
-
-# Store comparison results in-memory (replace with database in production)
-comparison_results = {}
-user_quotes = {}
-
-# === Enhanced Insurance Policy Sections ===
-POLICY_SECTIONS = [
-    "Fire", "Buildings combined", "Office contents", "Business interruption",
-    "General", "Theft", "Money", "Glass", "Fidelity guarantee", "Goods in transit",
-    "Business all risks", "Accidental damage", "Public liability", "Employers' liability",
-    "Stated benefits", "Group personal accident", "Motor personal accident",
-    "Motor General", "Motor Specific/Specified", "Motor Fleet", "Electronic equipment",
-    "Umbrella liability", "Assist/Value services/ VAS", "SASRIA", "Intermediary fee",
-    # Additional Commercial Insurance Sections
-    "Accounts receivable", "Motor Industry Risks", "Houseowners", "Machinery Breakdown",
-    "Householders", "Personal, All Risks", "Watercraft", "Personal Legal Liability",
-    "Deterioration of Stock", "Personal Umbrella Liability", "Greens and Irrigation Systems",
-    "Commercial Umbrella Liability", "Professional Indemnity", "Cyber", 
-    "Community & Sectional Title", "Plant All risk", "Contractor All Risk", "Hospitality"
-]
-
-# === Sub-sections for detailed analysis ===
-SECTION_SUBSECTIONS = {
-    "Fire": ["Building structure", "Contents", "Stock", "Loss of rent", "Debris removal", "Alternative accommodation", "Rent receivable"],
-    "Buildings combined": ["Main building", "Outbuildings", "Boundary walls", "Fixed improvements", "Tenant's improvements", "Signs", "Landscaping"],
-    "Office contents": ["Furniture & fittings", "Office equipment", "Computer equipment", "Personal effects", "Stock", "Documents"],
-    "Motor General": ["Comprehensive cover", "Third party", "Fire & theft", "Windscreen cover", "Roadside assistance", "Courtesy car"],
-    "Public liability": ["General public liability", "Products liability", "Professional indemnity", "Legal costs", "Cross liability"],
-    "SASRIA": ["Riot damages", "Strike damages", "Civil commotion", "Terrorism cover"],
-    # Additional detailed sub-sections
-    "Accounts receivable": ["Books of account", "Computer records", "Outstanding debtors", "Mercantile collections"],
-    "Motor Industry Risks": ["Stock in trade", "Customers vehicles", "Tools and equipment", "Liability"], 
-    "Machinery Breakdown": ["Mechanical breakdown", "Electrical breakdown", "Explosion", "Expediting expenses"],
-    "Professional Indemnity": ["Errors and omissions", "Legal costs", "Documents", "Loss of data"],
-    "Cyber": ["Data breach", "Cyber attack", "Business interruption", "System restoration", "Legal costs"],
-    "Watercraft": ["Hull damage", "Third party liability", "Personal accident", "Salvage costs"],
-    "Personal Legal Liability": ["Legal costs", "Damages awarded", "Defense costs", "Bail bonds"],
-    "Plant All risk": ["Construction plant", "Contractors equipment", "Hired in plant", "Transit"],
-    "Contractor All Risk": ["Contract works", "Plant and equipment", "Third party liability", "Professional indemnity"],
-    "Hospitality": ["Public liability", "Product liability", "Liquor liability", "Employment practices"]
-}
-
-class AgentState(TypedDict, total=False):
-    documents: List[str]
-    section: str
-    summary: str
-    tasks: List[Dict]
-    results: List[Dict]
-
-# Enhanced State for section-specific processing
-class SectionAgentState(TypedDict, total=False):
-    documents: List[str]
-    section_name: str
-    section_results: List[Dict]
-    all_sections_results: Dict[str, List[Dict]]
-    basic_info: Dict
-
-# === FastAPI Application ===
+# FastAPI app setup
 app = FastAPI(
-    title="Insurance Quote Comparison API",
-    description="Backend API for analyzing and comparing insurance quotes",
-    version="2.0"
+    title="🤖 AI-Enhanced Insurance Quote Comparison API",
+    description="Comprehensive insurance quote analysis with LLMWhisperer + LLM + PDF Reports",
+    version="3.0",
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
-# CORS middleware for Next.js frontend
+# CORS setup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
-    expose_headers=["Content-Disposition"]
 )
 
-# === Authentication (Simple Bearer Token for Demo) ===
+# Security
+security = HTTPBearer(auto_error=False)
+
+# In-memory storage (replace with database in production)
+comparison_results: Dict[str, Dict] = {}
+user_quotes: Dict[str, List[Dict]] = {}
+
+# Pydantic models
+class QuoteUploadResponse(BaseModel):
+    comparison_id: str
+    status: str
+    message: str
+    quote_count: int
+    results: List[Dict]
+    processing_time: float
+    llm_analysis_enabled: bool
+    report_generated: bool
+    report_filename: Optional[str] = None
+
+class UserStats(BaseModel):
+    total_quotes: int
+    completed: int
+    processing: int
+    average_premium: str
+
+class QuoteSummary(BaseModel):
+    comparison_id: str
+    created_at: str
+    status: str
+    quote_count: int
+    file_names: List[str]
+    total_premiums: List[str]
+    report_generated: bool = False
+    report_filename: Optional[str] = None
+    report_generated_at: Optional[str] = None
+
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Simple authentication - replace with proper JWT validation in production"""
-    if credentials.credentials != "demo-token":
-        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+    # Demo authentication - replace with real auth
     return {"user_id": "demo-user", "username": "demo"}
 
-# === Enhanced Text Extraction ===
-def extract_text_from_pdf(file_path: str) -> str:
-    url = "https://llmwhisperer-api.us-central.unstract.com/api/v2/whisper"
-
-    try:
-        with open(file_path, "rb") as f:
-            files = {'file': f}
-            headers = {'unstract-key': settings.LLM_API_KEY}  # Updated header
-            data = {
-                "output_format": "text",
-                "preserve_layout": "true"
-            }
-
-            print("📤 Uploading to LLMWhisperer v2...")
-            response = requests.post(url, files=files, headers=headers, data=data, timeout=30)
-            response.raise_for_status()
-
-            job_id = response.json()["whisper_hash"]  # v2 uses whisper_hash
-            status_url = f"https://llmwhisperer-api.us-central.unstract.com/api/v2/whisper-status?whisper_hash={job_id}"
-
-            print("⏳ Waiting for job to finish...")
-            while True:
-                status_resp = requests.get(status_url, headers=headers, timeout=30)
-                status = status_resp.json()
-                if status["status"] == "processed":
-                    # Retrieve the result using v2 API
-                    retrieve_url = f"https://llmwhisperer-api.us-central.unstract.com/api/v2/whisper-retrieve?whisper_hash={job_id}"
-                    result_resp = requests.get(retrieve_url, headers=headers, timeout=30)
-                    result = result_resp.json()
-                    return result.get("result_text", "")
-                elif status["status"] == "error":
-                    raise RuntimeError("LLMWhisperer failed to process document.")
-                time.sleep(1)
-
-    except Exception as e:
-        print(f"❌ API error: {e}")
-        print("🔄 Using fallback text extraction...")
-        return extract_text_fallback(file_path)
-
-def extract_text_fallback(file_path: str) -> str:
-    """Enhanced fallback with actual PDF text extraction using PyPDF2"""
-    try:
-        import PyPDF2
-        with open(file_path, 'rb') as file:
-            pdf_reader = PyPDF2.PdfReader(file)
-            text = ""
-            for page in pdf_reader.pages:
-                page_text = page.extract_text()
-                # Clean up common PDF extraction issues
-                page_text = re.sub(r'\s+', ' ', page_text)  # Normalize whitespace
-                page_text = re.sub(r'([a-z])([A-Z])', r'\1 \2', page_text)  # Fix concatenated words
-                text += page_text + "\n"
-
-            # If extracted text is too short, use sample data
-            if len(text.strip()) < 100:
-                return generate_sample_data(file_path)
-            return text
-    except Exception as e:
-        print(f"⚠️ PDF extraction failed: {e}")
-        return generate_sample_data(file_path)
-
-def generate_sample_data(file_path: str) -> str:
-    """Generate different sample data based on filename for demonstration"""
-    filename = os.path.basename(file_path).lower()
-
-    if "policy" in filename or "ptah" in filename:
-        return f"""
-        COMMERCIAL INSURANCE POLICY SCHEDULE - {filename}
-
-        Client: Sample Manufacturing (Pty) Ltd
-        Risk Address: Sample Address from {filename}
-
-        POLICY SECTIONS & PREMIUMS:
-        Fire: R450.00 - Buildings: R1,200,000 Contents: R800,000
-        Buildings combined: R971.45 - Sum Insured: R2,000,000
-        Office contents: R118.11 - Sum Insured: R500,000
-        Public liability: R316.66 - Limit: R2,000,000
-        Motor General: R812.44 - Fleet of 3 vehicles
-        SASRIA: R234.07 - Full coverage
-        Electronic equipment: R89.50 - Computers & servers
-
-        TOTAL MONTHLY PREMIUM: R2,963.68 (including VAT)
-
-        Contact: 011 408 4911
-        Email: commercial@sample.co.za
-        """
-    elif "bytes" in filename or "commercial" in filename:
-        return f"""
-        BYTES COMMERCIAL INSURANCE QUOTATION - {filename}
-
-        Policyholder: Olijvenhof Owner Association
-        Business Address: Commercial Property Address
-
-        COVERAGE BREAKDOWN:
-        Fire & Allied Perils: R520.30 - Building R1,500,000 Contents R600,000
-        Buildings combined: R1,245.80 - Combined limit R2,200,000
-        Office contents: R95.40 - Furniture & equipment R450,000
-        Business interruption: R186.70 - 12 months cover
-        Public liability: R420.15 - R3,000,000 limit
-        Motor comprehensive: R1,156.90 - 5 vehicle fleet
-        SASRIA: R198.45 - Riot & strike damage
-        Electronic equipment: R67.80 - IT equipment
-
-        TOTAL PREMIUM: R3,891.50 per month (VAT included)
-
-        Phone: 0860 444 444
-        Email: business@bytes.co.za
-        """
-    else:
-        return f"""
-        COMMERCIAL INSURANCE QUOTE - {filename}
-
-        Business Name: Generic Insurance Quote
-        Premises: Standard Business Address
-
-        SECTION PREMIUMS:
-        Fire section: R380.90 - Property value R1,800,000
-        Buildings combined: R756.20 - Total structure R1,900,000
-        Office contents: R134.60 - Contents R550,000
-        Theft: R45.30 - Specified items
-        Public liability: R298.80 - R1,500,000 cover
-        Employers liability: R156.40 - Staff coverage
-        Motor General: R945.70 - Commercial vehicles
-        SASRIA: R167.30 - Civil unrest
-
-        MONTHLY TOTAL: R2,885.20 (including 15% VAT)
-
-        Contact: 0860 756 756
-        Email: commercial@generic.co.za
-        """
-
-# [Include all the specialized agents and extraction functions from main.py here]
-# Note: I'll include the key functions, but for brevity, I'm referencing that all 
-# the specialized extraction logic should be copied from the original main.py
-
-# === API ENDPOINTS ===
-
 @app.get("/")
-def read_root():
-    """API Health check"""
+async def root():
+    """Root endpoint with API information"""
     return {
-        "message": "Insurance Quote Comparison API",
-        "version": "2.0",
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat()
+        "message": "🤖 AI-Enhanced Insurance Quote Comparison API",
+        "version": "3.0",
+        "features": [
+            "LLMWhisperer v2 PDF text extraction",
+            "Multi-LLM analysis (OpenAI, Anthropic, Google)",
+            "Comprehensive PDF report generation",
+            "40+ insurance policy sections",
+            "AI-powered insights and recommendations"
+        ],
+        "endpoints": {
+            "upload": "/api/quotes/upload",
+            "my_quotes": "/api/quotes/my-quotes", 
+            "health": "/api/health",
+            "docs": "/docs"
+        }
     }
 
 @app.get("/api/health")
-def health_check():
+async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "services": {
+            "llmwhisperer": "✅ Available" if pdf_extractor.api_key else "❌ No API Key",
+            "llm_integration": "✅ Ready",
+            "pdf_generator": "✅ Ready"
+        }
+    }
 
 @app.options("/api/quotes/upload")
 async def upload_quotes_options():
     """Handle CORS preflight for upload endpoint"""
     return {"message": "OK"}
 
-@app.post("/api/quotes/upload")
+@app.post("/api/quotes/upload", response_model=QuoteUploadResponse)
 async def upload_quotes(
-    files: list[UploadFile] = File(...),
+    background_tasks: BackgroundTasks,
+    files: List[UploadFile] = File(...),
     current_user: dict = Depends(get_current_user)
 ):
-    """Upload and process insurance quote files"""
-    if len(files) < 1:
-        raise HTTPException(status_code=400, detail="Please upload at least 1 quote file.")
+    """
+    🚀 COMPREHENSIVE UPLOAD & PROCESSING PIPELINE - 2-3 QUOTES COMPARISON
+    1. Upload 2-3 PDF quotes for comparison
+    2. Extract text with LLMWhisperer v2 Official Client
+    3. Analyze with LLM (if available) 
+    4. Generate comprehensive side-by-side PDF comparison report
+    """
+    start_time = time.time()
+    
+    # Validate number of files (2-3 quotes for optimal comparison)
+    if len(files) < 2:
+        raise HTTPException(
+            status_code=400, 
+            detail="Please upload at least 2 quote files for comparison. The system works best with 2-3 quotes."
+        )
+    
+    if len(files) > 3:
+        raise HTTPException(
+            status_code=400, 
+            detail="Please upload maximum 3 quote files for optimal comparison display. Additional files will be ignored."
+        )
 
     user_id = current_user["user_id"]
     comparison_id = str(uuid.uuid4())
     
-    # Process uploaded files
+    print(f"🚀 Starting comprehensive processing for comparison {comparison_id}")
+    print(f"📁 Processing {len(files)} files for side-by-side comparison...")
+    
+    # Limit to 3 files for optimal display
+    files_to_process = files[:3]
+    
+    # Step 1: Upload and extract text from PDFs
     documents = []
     file_info = []
     
-    for file in files:
+    for i, file in enumerate(files_to_process):
         if not file.filename.lower().endswith('.pdf'):
             continue
 
-        # Create unique filename
+        # Check file size
+        if file.size and file.size > settings.MAX_FILE_SIZE:
+            max_size_mb = settings.MAX_FILE_SIZE // (1024 * 1024)
+            raise HTTPException(
+                status_code=413, 
+                detail=f"File {file.filename} is too large. Maximum size is {max_size_mb}MB."
+            )
+
+        # Save uploaded file
         timestamp = int(time.time())
         safe_filename = f"{timestamp}_{file.filename}"
-        file_path = os.path.join(UPLOAD_DIR, safe_filename)
+        file_path = os.path.join(settings.UPLOAD_DIR, safe_filename)
         
         with open(file_path, "wb") as output_file:
             shutil.copyfileobj(file.file, output_file)
 
+        # Extract text using LLMWhisperer
         print(f"📄 Extracting text from: {file.filename}")
-        extracted_text = pdf_extractor.extract_text(file_path)
-        documents.append(extracted_text)
-        
-        file_info.append({
-            "original_name": file.filename,
-            "stored_path": file_path,
-            "size": os.path.getsize(file_path),
-            "uploaded_at": datetime.now().isoformat()
-        })
+        try:
+            extracted_text = pdf_extractor.extract_text(file_path)
+            
+            if not extracted_text or len(extracted_text.strip()) < 50:
+                print(f"⚠️ Low quality extraction for {file.filename}, using fallback...")
+                extracted_text = pdf_extractor._extract_fallback(file_path)
+            
+            documents.append({
+                'extracted_text': extracted_text,
+                'file_path': file_path,
+                'original_filename': file.filename,
+                'quote_id': f"quote_{i+1}"
+            })
+            
+            file_info.append({
+                "original_name": file.filename,
+                "stored_path": file_path,
+                "size": os.path.getsize(file_path),
+                "uploaded_at": datetime.now().isoformat(),
+                "extraction_success": True,
+                "text_length": len(extracted_text)
+            })
+            
+            print(f"✅ Successfully extracted {len(extracted_text):,} characters from {file.filename}")
+            
+        except Exception as e:
+            print(f"❌ Error processing {file.filename}: {e}")
+            continue
 
     if not documents:
-        raise HTTPException(status_code=400, detail="No valid PDF files found.")
+        raise HTTPException(status_code=400, detail="No valid PDF files could be processed.")
 
     try:
-        # Process documents using specialized agents (simplified for API)
+        # Step 2: Enhanced LLM Analysis
+        print(f"🧠 Starting LLM-enhanced analysis of {len(documents)} documents...")
         results = []
+        
         for i, doc in enumerate(documents):
-            result = parse_insurance_quote_simple(doc, i + 1)
-            results.append(result)
+            print(f"🔍 Analyzing document {i+1}/{len(documents)}: {doc['original_filename']}")
+            
+            # Use LLM service for comprehensive analysis
+            try:
+                llm_analysis = llm_service.analyze_insurance_quote(doc['extracted_text'], i+1)
+                structured_data = llm_service.extract_structured_data(doc['extracted_text'])
+                risk_assessment = llm_service.assess_risks(doc['extracted_text'])
+                coverage_gaps = llm_service.identify_coverage_gaps(doc['extracted_text'])
+                
+                # Create comprehensive result
+                result = {
+                    "quote_number": i + 1,
+                    "quote_id": doc['quote_id'],
+                    "original_filename": doc['original_filename'],
+                    "extracted_text": doc['extracted_text'],
+                    
+                    # LLM Analysis Results
+                    "llm_analysis": llm_analysis,
+                    "structured_data": structured_data,
+                    "risk_assessment": risk_assessment,
+                    "coverage_gaps": coverage_gaps,
+                    
+                    # Extract key fields for backward compatibility
+                    "vendor": llm_analysis.get("company_name", f"Insurance Company {i+1}"),
+                    "total_premium": llm_analysis.get("total_premium", "N/A"),
+                    "policy_type": llm_analysis.get("policy_type", "Commercial Insurance"),
+                    "policy_sections": llm_analysis.get("policy_sections", {}),
+                    "key_benefits": llm_analysis.get("key_benefits", []),
+                    "contact_info": llm_analysis.get("contact_info", {}),
+                    "broker_details": llm_analysis.get("broker_details", {}),
+                    
+                    # Processing metadata
+                    "processing_method": "LLM Enhanced" if (llm_service.openai_api_key or llm_service.anthropic_api_key or llm_service.google_api_key) else "Pattern Matching",
+                    "analysis_timestamp": datetime.now().isoformat()
+                }
+                
+                results.append(result)
+                print(f"✅ Analysis complete for {doc['original_filename']} - {result['vendor']}")
+                
+            except Exception as e:
+                print(f"❌ Analysis failed for {doc['original_filename']}: {e}")
+                # Create basic result as fallback
+                result = {
+                    "quote_number": i + 1,
+                    "quote_id": doc['quote_id'],
+                    "original_filename": doc['original_filename'],
+                    "extracted_text": doc['extracted_text'],
+                    "vendor": f"Insurance Company {i+1}",
+                    "total_premium": "N/A",
+                    "policy_type": "Commercial Insurance",
+                    "processing_method": "Basic Extraction",
+                    "analysis_timestamp": datetime.now().isoformat(),
+                    "error": str(e)
+                }
+                results.append(result)
 
-        # Store results
+        # Step 3: Store comparison data
         comparison_data = {
             "comparison_id": comparison_id,
             "user_id": user_id,
-            "files": file_info,
-            "results": results,
             "created_at": datetime.now().isoformat(),
-            "status": "completed"
+            "status": "completed",
+            "results": results,
+            "files": file_info,
+            "processing_time": time.time() - start_time,
+            "llm_analysis_enabled": bool(llm_service.openai_api_key or llm_service.anthropic_api_key or llm_service.google_api_key)
         }
         
         comparison_results[comparison_id] = comparison_data
@@ -335,61 +302,70 @@ async def upload_quotes(
             user_quotes[user_id] = []
         user_quotes[user_id].append(comparison_data)
 
-        # 🆕 AUTOMATIC PDF REPORT GENERATION
-        print(f"🔄 Automatically generating PDF report for comparison {comparison_id}...")
+        # Step 4: 🆕 AUTOMATIC PDF REPORT GENERATION
+        print(f"📊 Automatically generating comprehensive PDF report for comparison {comparison_id}...")
         try:
             pdf_path = report_generator.generate_pdf_report(results, comparison_id)
             filename = os.path.basename(pdf_path)
-            print(f"✅ Automatic PDF report generated: {filename}")
+            print(f"✅ Comprehensive PDF report generated: {filename}")
             
-            # Add report info to comparison data
+            # Update comparison data with report info
             comparison_data["report_generated"] = True
             comparison_data["report_filename"] = filename
-            comparison_data["report_path"] = pdf_path
             comparison_data["report_generated_at"] = datetime.now().isoformat()
+            comparison_data["report_path"] = pdf_path
+            
+            # Update stored data
+            comparison_results[comparison_id] = comparison_data
+            if user_id in user_quotes:
+                for quote in user_quotes[user_id]:
+                    if quote["comparison_id"] == comparison_id:
+                        quote.update({
+                            "report_generated": True,
+                            "report_filename": filename,
+                            "report_generated_at": datetime.now().isoformat()
+                        })
+                        break
             
         except Exception as e:
-            print(f"⚠️ Automatic PDF generation failed (continuing anyway): {e}")
-            # Don't fail the upload if report generation fails
+            print(f"⚠️ PDF report generation failed: {e}")
             comparison_data["report_generated"] = False
             comparison_data["report_error"] = str(e)
 
-        return {
-            "comparison_id": comparison_id,
-            "status": "success",
-            "message": f"Successfully processed {len(results)} quotes",
-            "quote_count": len(results),
-            "results": results
-        }
+        processing_time = time.time() - start_time
+        print(f"🎉 Complete processing finished in {processing_time:.2f} seconds")
+
+        return QuoteUploadResponse(
+            comparison_id=comparison_id,
+            status="completed",
+            message=f"Successfully processed {len(results)} quotes with comprehensive LLM analysis and PDF report generation",
+            quote_count=len(results),
+            results=results,
+            processing_time=processing_time,
+            llm_analysis_enabled=comparison_data["llm_analysis_enabled"],
+            report_generated=comparison_data.get("report_generated", False),
+            report_filename=comparison_data.get("report_filename")
+        )
 
     except Exception as e:
-        print(f"❌ Error processing quotes: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing quotes: {str(e)}")
+        print(f"❌ Processing failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
 
 @app.get("/api/quotes/compare/{comparison_id}")
-def get_comparison(
-    comparison_id: str,
-    current_user: dict = Depends(get_current_user)
-):
-    """Get comparison results by ID"""
+async def get_comparison(comparison_id: str, current_user: dict = Depends(get_current_user)):
+    """Get comparison results"""
     if comparison_id not in comparison_results:
         raise HTTPException(status_code=404, detail="Comparison not found")
     
-    data = comparison_results[comparison_id]
-    
-    # Check user ownership
-    if data["user_id"] != current_user["user_id"]:
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    return data
+    return comparison_results[comparison_id]["results"]
 
 @app.get("/api/quotes/my-quotes")
-def get_user_quotes(current_user: dict = Depends(get_current_user)):
-    """Get all quotes for the current user"""
+async def get_user_quotes(current_user: dict = Depends(get_current_user)):
+    """Get user's quotes with enhanced information"""
     user_id = current_user["user_id"]
     user_comparisons = user_quotes.get(user_id, [])
     
-    # Return summary info
+    # Return enhanced summary info
     summaries = []
     for comp in user_comparisons:
         summary = {
@@ -399,7 +375,9 @@ def get_user_quotes(current_user: dict = Depends(get_current_user)):
             "quote_count": len(comp["results"]),
             "file_names": [f["original_name"] for f in comp["files"]],
             "total_premiums": [r.get("total_premium", "N/A") for r in comp["results"]],
-            # 🆕 Add report information
+            "processing_time": comp.get("processing_time", 0),
+            "llm_analysis_enabled": comp.get("llm_analysis_enabled", False),
+            # Report information
             "report_generated": comp.get("report_generated", False),
             "report_filename": comp.get("report_filename", None),
             "report_generated_at": comp.get("report_generated_at", None)
@@ -412,8 +390,8 @@ def get_user_quotes(current_user: dict = Depends(get_current_user)):
     }
 
 @app.get("/api/quotes/stats")
-def get_user_stats(current_user: dict = Depends(get_current_user)):
-    """Get user statistics for dashboard"""
+async def get_user_stats(current_user: dict = Depends(get_current_user)):
+    """Get user statistics"""
     user_id = current_user["user_id"]
     user_comparisons = user_quotes.get(user_id, [])
     
@@ -425,46 +403,55 @@ def get_user_stats(current_user: dict = Depends(get_current_user)):
     all_premiums = []
     for comp in user_comparisons:
         for result in comp["results"]:
-            premium_str = result.get("total_premium", "R0")
-            amount = re.sub(r'[^\d.]', '', premium_str)
-            if amount:
+            premium_str = result.get("total_premium", "N/A")
+            if premium_str != "N/A" and premium_str.startswith("R "):
                 try:
-                    all_premiums.append(float(amount))
-                except ValueError:
-                    pass
+                    amount = float(premium_str.replace("R ", "").replace(",", ""))
+                    all_premiums.append(amount)
+                except:
+                    continue
     
-    avg_premium = sum(all_premiums) / len(all_premiums) if all_premiums else 0
+    average_premium = f"R {sum(all_premiums) / len(all_premiums):,.2f}" if all_premiums else "N/A"
     
-    return {
-        "total_quotes": total_quotes,
-        "completed": completed,
-        "processing": processing,
-        "average_premium": f"R{avg_premium:,.2f}".rstrip('0').rstrip('.') if avg_premium > 0 else "R0"
-    }
+    return UserStats(
+        total_quotes=total_quotes,
+        completed=completed,
+        processing=processing,
+        average_premium=average_premium
+    )
+
+@app.get("/api/reports/download/{filename}")
+async def download_report(filename: str, current_user: dict = Depends(get_current_user)):
+    """Download generated PDF report"""
+    file_path = os.path.join(settings.REPORTS_DIR, filename)
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    return FileResponse(
+        path=file_path,
+        filename=filename,
+        media_type='application/pdf',
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 
 @app.post("/api/quotes/generate-report/{comparison_id}")
-def generate_report(
-    comparison_id: str,
-    current_user: dict = Depends(get_current_user)
-):
-    """Generate PDF report for comparison"""
+async def generate_report_manual(comparison_id: str, current_user: dict = Depends(get_current_user)):
+    """Manual PDF report generation (backup endpoint)"""
     if comparison_id not in comparison_results:
         raise HTTPException(status_code=404, detail="Comparison not found")
     
-    data = comparison_results[comparison_id]
-    
-    # Check user ownership
-    if data["user_id"] != current_user["user_id"]:
-        raise HTTPException(status_code=403, detail="Access denied")
+    comparison_data = comparison_results[comparison_id]
     
     try:
-        # Generate PDF report using FPDF2 (reliable)
-        pdf_path = report_generator.generate_pdf_report(data["results"], comparison_id)
-        
-        # Extract filename from path
+        print(f"📊 Manually generating PDF report for comparison {comparison_id}...")
+        pdf_path = report_generator.generate_pdf_report(comparison_data["results"], comparison_id)
         filename = os.path.basename(pdf_path)
         
-        print(f"✅ Report generated successfully: {pdf_path}")
+        # Update comparison data
+        comparison_data["report_generated"] = True
+        comparison_data["report_filename"] = filename
+        comparison_data["report_generated_at"] = datetime.now().isoformat()
         
         return {
             "report_id": comparison_id,
@@ -474,251 +461,19 @@ def generate_report(
         }
         
     except Exception as e:
-        print(f"❌ Error generating report: {e}")
-        raise HTTPException(status_code=500, detail=f"Error generating PDF report: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
 
-@app.get("/api/reports/download/{filename}")
-def download_report(filename: str):
-    """Download generated report"""
-    file_path = os.path.join(REPORTS_DIR, filename)
-    
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="Report not found")
-    
-    return FileResponse(
-        file_path,
-        filename=filename,
-        media_type='application/pdf'
-    )
-
-# === Simplified Quote Parsing for API ===
-def parse_insurance_quote_simple(text: str, quote_number: int) -> Dict:
-    """Simplified quote parsing for API response"""
-    # Extract basic info
-    basic_info = extract_basic_info([text])
-    
-    # Process with key sections only for faster API response
-    key_sections = ["Fire", "Buildings combined", "Office contents", "Motor General", "Public liability", "SASRIA"]
-    
-    policy_sections = {}
-    for section in POLICY_SECTIONS:
-        section_data = extract_section_details_simple(text, section)
-        policy_sections[section] = section_data
-    
-    return {
-        "quote_number": quote_number,
-        "vendor": basic_info["vendors"][0] if basic_info["vendors"] else "Unknown Provider",
-        "total_premium": basic_info["total_premiums"][0] if basic_info["total_premiums"] else "N/A",
-        "payment_terms": "Monthly",
-        "contact_phone": basic_info["phones"][0] if basic_info["phones"] else "N/A",
-        "contact_email": basic_info["emails"][0] if basic_info["emails"] else "N/A",
-        "risk_address": basic_info["addresses"][0] if basic_info["addresses"] else "Not specified",
-        "client_details": basic_info["clients"][0] if basic_info["clients"] else "Not specified",
-        "quote_reference": "N/A",
-        "quote_date": time.strftime('%d/%m/%Y'),
-        "policy_sections": policy_sections
-    }
-
-def extract_section_details_simple(text: str, section_name: str) -> Dict:
-    """Simplified section extraction for faster API response"""
-    # Basic patterns for quick extraction
-    escaped_section = re.escape(section_name)
-    
-    # Check if section exists
-    included = "Y" if re.search(rf"\b{escaped_section}\b", text, re.I) else "N"
-    
-    # Extract premium
-    premium = "N/A"
-    premium_pattern = rf"{escaped_section}\s*.*?R\s?([\d,.\s]+)"
-    match = re.search(premium_pattern, text, re.I)
-    if match:
-        amount = re.sub(r'[^\d.]', '', match.group(1))
-        if amount:
-            try:
-                float_amount = float(amount)
-                if 10 <= float_amount <= 50000:
-                    premium = f"R{float_amount:,.2f}".rstrip('0').rstrip('.')
-                    included = "Y"
-            except ValueError:
-                pass
-    
-    return {
-        "included": included,
-        "premium": premium,
-        "sum_insured": "N/A",
-        "sub_sections": [],
-        "excess": "Standard"
-    }
-
-# [Include other necessary functions from original main.py]
-
-# === Utility Functions ===
-def extract_basic_info(documents: List[str]) -> Dict:
-    """Extract basic information like vendor, total premium, contacts with enhanced accuracy"""
-    vendors = []
-    total_premiums = []
-    phones = []
-    emails = []
-    addresses = []
-    clients = []
-
-    for doc in documents:
-        # Enhanced vendor extraction
-        vendor_patterns = [
-            r"(Hollard|Bryte|Sanlam|OUTsurance|Discovery|Momentum|King Price|Santam|Mutual & Federal|Old Mutual)",
-            r"Insurance Company[:\s]*([A-Za-z\s&]+?)(?:\n|Limited|Ltd)",
-            r"Provider[:\s]*([A-Za-z\s&]+?)(?:\n|Limited|Ltd)"
-        ]
-
-        vendor = "Unknown Provider"
-        for pattern in vendor_patterns:
-            match = re.search(pattern, doc, re.I)
-            if match:
-                vendor = match.group(1).strip().title()
-                break
-        vendors.append(vendor)
-
-        # Extract total premium
-        total_patterns = [
-            r"(?:Total|Monthly|Final)\s+(?:Premium|Amount)\s*[:\-]?\s*R\s?([\d,.\s]+)",
-            r"TOTAL\s+PREMIUM\s*[:\-]?\s*R\s?([\d,.\s]+)"
-        ]
-
-        total_premium = "N/A"
-        for pattern in total_patterns:
-            match = re.search(pattern, doc, re.I)
-            if match:
-                amount = re.sub(r'[^\d.]', '', match.group(1))
-                if amount:
-                    try:
-                        float_amount = float(amount)
-                        if 200 <= float_amount <= 100000:
-                            total_premium = f"R{float_amount:,.2f}".rstrip('0').rstrip('.')
-                            break
-                    except ValueError:
-                        continue
-        total_premiums.append(total_premium)
-
-        # Extract phone and email (simplified for API)
-        phone_pattern = r"(?:Tel|Phone)[:\s]*([\d\s\-]{8,15})"
-        phone_match = re.search(phone_pattern, doc, re.I)
-        phones.append(phone_match.group(1).strip() if phone_match else "N/A")
-
-        email_pattern = r"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"
-        email_match = re.search(email_pattern, doc, re.I)
-        emails.append(email_match.group(1).strip() if email_match else "N/A")
-
-        addresses.append("Address not specified")
-        clients.append("Client not specified")
-
-    return {
-        "vendors": vendors,
-        "total_premiums": total_premiums,
-        "phones": phones,
-        "emails": emails,
-        "addresses": addresses,
-        "clients": clients
-    }
-
-def create_detailed_pdf_html(data: List[Dict]) -> str:
-    """Create PDF report HTML (simplified version)"""
-    generation_date = time.strftime('%B %d, %Y')
-    
-    html = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Insurance Quote Comparison Report</title>
-        <style>
-            body {{ font-family: Arial, sans-serif; margin: 20px; }}
-            .header {{ text-align: center; margin-bottom: 30px; }}
-            .section {{ margin: 20px 0; }}
-            table {{ width: 100%; border-collapse: collapse; margin: 10px 0; }}
-            th, td {{ border: 1px solid #000; padding: 8px; text-align: center; }}
-            th {{ background-color: #f0f0f0; font-weight: bold; }}
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <h1>Insurance Quote Comparison Report</h1>
-            <p>Generated on {generation_date}</p>
-        </div>
-        
-        <div class="section">
-            <h2>Premium Summary</h2>
-            <table>
-                <tr>
-                    <th>Quote</th>
-                    <th>Provider</th>
-                    <th>Total Premium</th>
-                </tr>
-    """
-    
-    for i, quote in enumerate(data):
-        html += f"""
-                <tr>
-                    <td>Quote {i+1}</td>
-                    <td>{quote.get('vendor', 'Unknown')}</td>
-                    <td>{quote.get('total_premium', 'N/A')}</td>
-                </tr>
-        """
-    
-    html += """
-            </table>
-        </div>
-    </body>
-    </html>
-    """
-    
-    return html
-
-def generate_pdf_report(html: str, out_path: str):
-    """Generate PDF using WeasyPrint with Unicode support"""
-    try:
-        from weasyprint import HTML, CSS
-        from weasyprint.text.fonts import FontConfiguration
-        
-        # Create font configuration that supports Unicode
-        font_config = FontConfiguration()
-        
-        # Define CSS with Unicode-safe fonts
-        unicode_css = CSS(string='''
-            body, * {
-                font-family: "DejaVu Sans", "Liberation Sans", Arial, sans-serif !important;
-            }
-        ''', font_config=font_config)
-        
-        # Generate PDF with Unicode support
-        HTML(string=html).write_pdf(
-            out_path,
-            stylesheets=[unicode_css],
-            presentational_hints=True,
-            optimize_images=True,
-            font_config=font_config
-        )
-        print(f"✅ PDF report generated successfully: {out_path}")
-    except Exception as e:
-        print(f"❌ Error generating PDF with Unicode support: {e}")
-        # Fallback to basic generation without special font config
-        try:
-            HTML(string=html).write_pdf(out_path)
-            print(f"✅ PDF report generated with fallback method: {out_path}")
-        except Exception as fallback_error:
-            print(f"❌ Fallback PDF generation also failed: {fallback_error}")
-            raise
-
-# === Application Startup ===
 if __name__ == "__main__":
-    print("🚀 Starting Insurance Quote Comparison Backend API...")
-    print("📋 Professional backend for Next.js frontend integration")
-    print("🔗 Backend API will be available at: http://localhost:5000")
-    print("📚 API Documentation: http://localhost:5000/docs")
-
+    import uvicorn
+    print("🚀 Starting AI-Enhanced Insurance Quote Comparison Backend...")
+    print("📋 Comprehensive LLMWhisperer + LLM + PDF Report Pipeline")
+    print(f"🔗 Backend API will be available at: http://{settings.API_HOST}:{settings.API_PORT}")
+    print(f"📚 API Documentation: http://{settings.API_HOST}:{settings.API_PORT}/docs")
+    
     uvicorn.run(
-        "main:app", 
-        host="0.0.0.0", 
-        port=5000, 
+        "main:app",
+        host=settings.API_HOST,
+        port=settings.API_PORT,
         reload=True,
         log_level="info"
     ) 

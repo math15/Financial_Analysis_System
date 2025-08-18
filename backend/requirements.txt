@@ -1,37 +1,48 @@
+# FastAPI and web framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 python-multipart==0.0.6
+
+# Data validation and serialization
 pydantic==2.5.0
-requests==2.31.0
+
+# PDF processing and text extraction
+pdfplumber==0.10.3
 PyPDF2==3.0.1
 
-# PDF Generation - FPDF2 is the primary, reliable option
-fpdf2==2.8.4
+# Official LLMWhisperer Python Client
+llmwhisperer-client>=2.0.0
 
-# PDF Text Extraction
-pdfplumber==0.11.7
+# PDF generation
+fpdf2==2.7.6
 
-# WeasyPrint with compatible versions (resolves Unicode issues)
-weasyprint==57.0
-pydyf==0.7.0
+# HTTP requests (for LLM APIs)
+requests==2.31.0
 
-# Additional WeasyPrint dependencies for Unicode support
-cffi>=1.0.0
-cssselect2>=0.1
-fonttools>=4.0.0
-html5lib>=1.1
-Pillow>=9.1.0
-Pyphen>=0.9.1
-tinycss2>=1.0.0
-
-# Authentication and Security
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
+# Environment variables
 python-dotenv==1.0.0
 
-# LLMWhisperer and OpenAI clients
-llmwhisperer-client>=1.0.0
-openai>=1.0.0
+# Date and time handling
+python-dateutil==2.8.2
 
-# Additional dependencies for enhanced features
-langgraph>=0.0.1 
+# JSON handling
+orjson==3.9.10
+
+# Async support
+aiofiles==23.2.1
+
+# Logging
+loguru==0.7.2
+
+# Type hints
+typing-extensions==4.8.0
+
+# Security
+cryptography==45.0.6
+
+# Configuration management
+pydantic-settings==2.1.0
+
+# Testing (optional)
+pytest==7.4.3
+httpx==0.25.2 

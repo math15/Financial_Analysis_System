@@ -6,7 +6,7 @@ class Settings:
     
     # API Configuration
     API_TITLE = "Insurance Quote Comparison API"
-    API_VERSION = "2.0"
+    API_VERSION = "3.0"
     API_HOST = os.getenv("API_HOST", "0.0.0.0")
     API_PORT = int(os.getenv("API_PORT", "5000"))
     
@@ -21,27 +21,25 @@ class Settings:
     
     # LLM API Configuration (LLMWhisperer v2)
     LLM_API_KEY = os.getenv("LLM_API_KEY", os.getenv("LLMWHISPERER_API_KEY", "T4HccvP3IujppTUdbQFX8aLIXs_9y0o3yLPQNiWinQQ"))
-    LLM_API_URL = "https://llmwhisperer-api.us-central.unstract.com/api/v2"  # v2 API (current version)
-    # EU Region alternative: https://llmwhisperer-api.eu-west.unstract.com/api/v2
+    LLM_API_URL = os.getenv("LLM_API_URL", "https://llmwhisperer-api.us-central.unstract.com/api/v2")
     
     # Processing Mode Configuration
-    USE_LLM_API = os.getenv("USE_LLM_API", "true").lower() == "true"  # Enable/disable LLM API
-    FALLBACK_TO_LOCAL = os.getenv("FALLBACK_TO_LOCAL", "true").lower() == "true"  # Always fallback to local
-    LOCAL_PROCESSING_ONLY = os.getenv("LOCAL_PROCESSING_ONLY", "false").lower() == "true"  # Force local only
+    USE_LLM_API = os.getenv("USE_LLM_API", "true").lower() == "true"
+    FALLBACK_TO_LOCAL = os.getenv("FALLBACK_TO_LOCAL", "true").lower() == "true"
+    LOCAL_PROCESSING_ONLY = os.getenv("LOCAL_PROCESSING_ONLY", "false").lower() == "true"
     
-    # CORS Settings  
+    # CORS Settings - Production Ready
     ALLOWED_ORIGINS = [
-        # Allow all origins temporarily for testing
-        "*"
+        # Production domains
+        "https://mailbroker.ddns.net",
+        "http://mailbroker.ddns.net", 
+        "https://apimailbroker.ddns.net",
+        "http://apimailbroker.ddns.net",
         # Development
-        # "http://localhost:3000",
-        # "http://127.0.0.1:3000",
-        # Production - Frontend domain
-        # "https://mailbroker.ddns.net",
-        # "http://mailbroker.ddns.net",
-        # Production - Backend domain (if needed)
-        # "https://apimailbroker.ddns.net",
-        # "http://apimailbroker.ddns.net"
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5000",
+        "http://127.0.0.1:5000"
     ]
     
     # File Upload Settings
