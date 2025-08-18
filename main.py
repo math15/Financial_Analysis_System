@@ -14,24 +14,59 @@ LLM_API_KEY = "T4HccvP3IujppTUdbQFX8aLIXs_9y0o3yLPQNiWinQQ"
 # Store comparison results globally for dashboard
 comparison_results = []
 
-# === Enhanced Insurance Policy Sections ===
+# === Enhanced Insurance Policy Sections - Complete Commercial Coverage ===
 POLICY_SECTIONS = [
+    # Core Commercial Sections
     "Fire", "Buildings combined", "Office contents", "Business interruption",
     "General", "Theft", "Money", "Glass", "Fidelity guarantee", "Goods in transit",
     "Business all risks", "Accidental damage", "Public liability", "Employers' liability",
     "Stated benefits", "Group personal accident", "Motor personal accident",
     "Motor General", "Motor Specific/Specified", "Motor Fleet", "Electronic equipment",
-    "Umbrella liability", "Assist/Value services/ VAS", "SASRIA", "Intermediary fee"
+    "Umbrella liability", "Assist/Value services/ VAS", "SASRIA", "Intermediary fee",
+    
+    # Additional Commercial Insurance Sections (as per requirements)
+    "Accounts receivable", "Motor Industry Risks", "Houseowners", "Machinery Breakdown",
+    "Householders", "Personal, All Risks", "Watercraft", "Personal Legal Liability",
+    "Deterioration of Stock", "Personal Umbrella Liability", "Greens and Irrigation Systems",
+    "Commercial Umbrella Liability", "Professional Indemnity", "Cyber", 
+    "Community & Sectional Title", "Plant All risk", "Contractor All Risk", "Hospitality"
 ]
 
-# === Sub-sections for detailed analysis ===
+# === Sub-sections for detailed analysis - Complete Commercial Coverage ===
 SECTION_SUBSECTIONS = {
-    "Fire": ["Building structure", "Contents", "Stock", "Loss of rent", "Debris removal"],
-    "Buildings combined": ["Main building", "Outbuildings", "Boundary walls", "Fixed improvements"],
-    "Office contents": ["Furniture & fittings", "Office equipment", "Computer equipment", "Personal effects"],
-    "Motor General": ["Comprehensive cover", "Third party", "Fire & theft", "Windscreen cover"],
-    "Public liability": ["General public liability", "Products liability", "Professional indemnity", "Legal costs"],
-    "SASRIA": ["Riot damages", "Strike damages", "Civil commotion", "Terrorism cover"]
+    # Core Sections with Enhanced Sub-sections
+    "Fire": ["Building structure", "Contents", "Stock", "Loss of rent", "Debris removal", "Alternative accommodation", "Rent receivable", "Machinery", "Equipment"],
+    "Buildings combined": ["Main building", "Outbuildings", "Boundary walls", "Fixed improvements", "Tenant's improvements", "Signs", "Landscaping", "Carports", "Storage facilities"],
+    "Office contents": ["Furniture & fittings", "Office equipment", "Computer equipment", "Personal effects", "Stock", "Documents", "Artwork", "Antiques", "Electronics"],
+    "Motor General": ["Comprehensive cover", "Third party", "Fire & theft", "Windscreen cover", "Roadside assistance", "Courtesy car", "Hire car", "Medical expenses"],
+    "Public liability": ["General public liability", "Products liability", "Professional indemnity", "Legal costs", "Cross liability", "Tenant's liability", "Employer's liability"],
+    "SASRIA": ["Riot damages", "Strike damages", "Civil commotion", "Terrorism cover", "Political violence", "Social unrest", "Malicious damage"],
+    
+    # Additional Commercial Sections with Detailed Sub-sections
+    "Accounts receivable": ["Books of account", "Computer records", "Outstanding debtors", "Mercantile collections", "Credit sales", "Bad debts", "Collection costs"],
+    "Motor Industry Risks": ["Stock in trade", "Customers vehicles", "Tools and equipment", "Liability", "Showroom contents", "Spare parts", "Workshop equipment"], 
+    "Machinery Breakdown": ["Mechanical breakdown", "Electrical breakdown", "Explosion", "Expediting expenses", "Replacement parts", "Labour costs", "Loss of income"],
+    "Professional Indemnity": ["Errors and omissions", "Legal costs", "Documents", "Loss of data", "Defense costs", "Settlement costs", "Regulatory fines"],
+    "Cyber": ["Data breach", "Cyber attack", "Business interruption", "System restoration", "Legal costs", "Notification costs", "Credit monitoring", "Ransomware"],
+    "Watercraft": ["Hull damage", "Third party liability", "Personal accident", "Salvage costs", "Wreck removal", "Pollution liability", "Medical expenses"],
+    "Personal Legal Liability": ["Legal costs", "Damages awarded", "Defense costs", "Bail bonds", "Court costs", "Settlement costs"],
+    "Plant All risk": ["Construction plant", "Contractors equipment", "Hired in plant", "Transit", "Testing", "Commissioning", "Maintenance"],
+    "Contractor All Risk": ["Contract works", "Plant and equipment", "Third party liability", "Professional indemnity", "Delay in start-up", "Testing", "Maintenance"],
+    "Hospitality": ["Public liability", "Product liability", "Liquor liability", "Employment practices", "Food safety", "Guest property", "Business interruption"],
+    
+    # Additional Sections
+    "Business interruption": ["Loss of gross profit", "Increased cost of working", "Claims preparation", "Accountants fees", "Loss of rent", "Debtors", "Book debts"],
+    "Electronic equipment": ["Computers", "Servers", "Networking equipment", "Software", "Data", "Peripherals", "Mobile devices", "IoT devices"],
+    "Theft": ["Burglary", "Robbery", "Employee dishonesty", "Money", "Securities", "Stock", "Equipment", "Contents"],
+    "Money": ["Cash", "Cheques", "Credit cards", "Bank notes", "Coins", "Postal orders", "Gift vouchers", "Travellers cheques"],
+    "Glass": ["Windows", "Doors", "Skylights", "Shop fronts", "Display cases", "Mirrors", "Signs", "Fittings"],
+    "Fidelity guarantee": ["Employee dishonesty", "Fraud", "Theft", "Embezzlement", "Forgery", "Computer fraud", "Funds transfer fraud"],
+    "Goods in transit": ["Road transport", "Rail transport", "Air transport", "Sea transport", "Temporary storage", "Loading/unloading", "Packing materials"],
+    "Accidental damage": ["Impact damage", "Falling objects", "Collision", "Spillage", "Breakage", "Vandalism", "Natural disasters"],
+    "Employers' liability": ["Workplace accidents", "Occupational diseases", "Medical expenses", "Rehabilitation", "Legal costs", "Compensation"],
+    "Umbrella liability": ["Excess liability", "Aggregate limits", "Worldwide coverage", "Additional insureds", "Defense costs", "Settlement costs"],
+    "Assist/Value services/ VAS": ["Emergency assistance", "Legal helpline", "Medical assistance", "Travel assistance", "Home assistance", "24/7 support"],
+    "Intermediary fee": ["Brokerage", "Administration fees", "Policy fees", "Service charges", "Documentation fees", "Processing fees"]
 }
 
 class AgentState(TypedDict, total=False):
@@ -43,30 +78,34 @@ class AgentState(TypedDict, total=False):
 
 # === Enhanced Text Extraction ===
 def extract_text_from_pdf(file_path: str) -> str:
-    url = "https://api.unstract.com/v1/process"
+    url = "https://llmwhisperer-api.us-central.unstract.com/api/v2/whisper"
 
     try:
         with open(file_path, "rb") as f:
             files = {'file': f}
-            headers = {'Authorization': f"Bearer {LLM_API_KEY}"}
+            headers = {'unstract-key': LLM_API_KEY}  # Updated header
             data = {
                 "output_format": "text",
                 "preserve_layout": "true"
             }
 
-            print("📤 Uploading to LLMWhisperer...")
+            print("📤 Uploading to LLMWhisperer v2...")
             response = requests.post(url, files=files, headers=headers, data=data, timeout=30)
             response.raise_for_status()
 
-            job_id = response.json()["job_id"]
-            status_url = f"https://api.unstract.com/v1/status/{job_id}"
+            job_id = response.json()["whisper_hash"]  # v2 uses whisper_hash
+            status_url = f"https://llmwhisperer-api.us-central.unstract.com/api/v2/whisper-status?whisper_hash={job_id}"
 
             print("⏳ Waiting for job to finish...")
             while True:
                 status_resp = requests.get(status_url, headers=headers, timeout=30)
                 status = status_resp.json()
-                if status["status"] == "done":
-                    return status["result"]
+                if status["status"] == "processed":
+                    # Retrieve the result using v2 API
+                    retrieve_url = f"https://llmwhisperer-api.us-central.unstract.com/api/v2/whisper-retrieve?whisper_hash={job_id}"
+                    result_resp = requests.get(retrieve_url, headers=headers, timeout=30)
+                    result = result_resp.json()
+                    return result.get("result_text", "")
                 elif status["status"] == "error":
                     raise RuntimeError("LLMWhisperer failed to process document.")
                 time.sleep(1)
@@ -197,26 +236,39 @@ def extract_fire_section_specialized(text: str, quote_num: int) -> Dict:
 
     fire_patterns = {
         "premium": [
-            r"Fire\s*[:\-]?\s*.*?R\s?([\d,.\s]+)",
+            r"Fire\s*[:\-]?\s*.*?(?:Premium|Monthly)\s*.*?R\s?([\d,.\s]+)",
             r"Fire\s+(?:Insurance|Cover|Section)\s*.*?Premium\s*.*?R\s?([\d,.\s]+)",
-            r"(?:Fire|Fire\s+&\s+Allied\s+Perils)\s*.*?Monthly\s*.*?R\s?([\d,.\s]+)"
+            r"(?:Fire|Fire\s+&\s+Allied\s+Perils)\s*.*?Monthly\s*.*?R\s?([\d,.\s]+)",
+            r"Fire\s*[:\-]?\s*R\s?([\d,.\s]+)(?=\s*(?:per\s+month|monthly|pm))",
+            r"(?:Fire\s+section|Fire\s+cover)\s*[:\-]?\s*.*?R\s?([\d,.\s]+)",
+            # Enhanced patterns for better detection
+            r"FIRE\s*.*?R\s?([\d,.\s]+)",
+            r"Fire\s+and\s+Allied\s+Perils\s*.*?R\s?([\d,.\s]+)"
         ],
         "sum_insured": [
-            r"Fire\s*.*?(?:Building|Structure)\s*.*?R\s?([\d,.\s]{6,})",
-            r"Fire\s*.*?(?:Contents|Stock)\s*.*?R\s?([\d,.\s]{6,})",
-            r"Fire\s*.*?(?:Sum\s+Insured|Limit)\s*.*?R\s?([\d,.\s]{6,})"
+            r"Fire\s*.*?(?:Building|Structure)\s*[:\-]?\s*R\s?([\d,.\s]{6,})",
+            r"Fire\s*.*?(?:Contents|Stock)\s*[:\-]?\s*R\s?([\d,.\s]{6,})",
+            r"Fire\s*.*?(?:Sum\s+Insured|Limit|Value)\s*[:\-]?\s*R\s?([\d,.\s]{6,})",
+            r"(?:Building|Property)\s+value\s*.*?Fire\s*.*?R\s?([\d,.\s]{6,})",
+            # Enhanced patterns
+            r"Fire\s+section\s*.*?(?:building|structure|property)\s*[:\-]?\s*R\s?([\d,.\s]{6,})",
+            r"Main\s+building\s*.*?Fire\s*.*?R\s?([\d,.\s]{6,})"
         ],
         "buildings": [
-            r"Fire\s*.*?Building\s*.*?R\s?([\d,.\s]{6,})",
-            r"Main\s+building\s*.*?R\s?([\d,.\s]{6,})"
+            r"Fire\s*.*?Building\s*[:\-]?\s*R\s?([\d,.\s]{6,})",
+            r"Main\s+building\s*.*?R\s?([\d,.\s]{6,})",
+            r"Building\s+structure\s*.*?R\s?([\d,.\s]{6,})",
+            r"Property\s+value\s*.*?R\s?([\d,.\s]{6,})"
         ],
         "contents": [
-            r"Fire\s*.*?Contents\s*.*?R\s?([\d,.\s]{6,})",
-            r"Fire\s*.*?Stock\s*.*?R\s?([\d,.\s]{6,})"
+            r"Fire\s*.*?Contents\s*[:\-]?\s*R\s?([\d,.\s]{6,})",
+            r"Fire\s*.*?Stock\s*[:\-]?\s*R\s?([\d,.\s]{6,})",
+            r"Contents\s+cover\s*.*?R\s?([\d,.\s]{6,})"
         ],
         "excess": [
-            r"Fire\s*.*?(?:Excess|Deductible)\s*.*?R\s?([\d,.\s]+)",
-            r"Fire\s*.*?(\d+)%\s+of\s+claim"
+            r"Fire\s*.*?(?:Excess|Deductible)\s*[:\-]?\s*R\s?([\d,.\s]+)",
+            r"Fire\s*.*?(\d+)%\s+of\s+claim",
+            r"Excess\s*.*?Fire\s*.*?R\s?([\d,.\s]+)"
         ]
     }
 
@@ -233,48 +285,98 @@ def extract_fire_section_specialized(text: str, quote_num: int) -> Dict:
         "sub_sections": []
     }
 
-    if re.search(r"\bFire\b", text, re.I):
+    # Enhanced detection logic
+    fire_indicators = [
+        r"\bFire\b",
+        r"Fire\s+Insurance",
+        r"Fire\s+Cover",
+        r"Fire\s+Section", 
+        r"Fire\s+&\s+Allied\s+Perils",
+        r"FIRE\s+SECTION"
+    ]
+    
+    has_fire_section = any(re.search(pattern, text, re.I) for pattern in fire_indicators)
+    
+    if has_fire_section:
         result["included"] = "Y"
 
-        # Extract premium
+        # Extract premium with enhanced validation
         for pattern in fire_patterns["premium"]:
-            match = re.search(pattern, text, re.I)
-            if match:
-                amount = re.sub(r'[^\d.]', '', match.group(1))
-                if amount and 10 <= float(amount) <= 10000:
-                    result["premium"] = f"R{amount}"
+            matches = re.finditer(pattern, text, re.I)
+            for match in matches:
+                amount_str = match.group(1)
+                amount = re.sub(r'[^\d.]', '', amount_str)
+                if amount and len(amount) >= 2:
+                    try:
+                        float_amount = float(amount)
+                        # More realistic premium range for fire insurance
+                        if 50 <= float_amount <= 15000:
+                            result["premium"] = f"R{float_amount:,.2f}".rstrip('0').rstrip('.')
+                            break
+                    except ValueError:
+                        continue
+            if result["premium"] != "N/A":
                     break
 
-        # Extract sum insured
+        # Extract sum insured with better validation
         for pattern in fire_patterns["sum_insured"]:
-            match = re.search(pattern, text, re.I)
-            if match:
-                amount = re.sub(r'[^\d.]', '', match.group(1))
-                if amount and float(amount) >= 50000:
-                    result["sum_insured"] = f"R{amount}"
+            matches = re.finditer(pattern, text, re.I)
+            for match in matches:
+                amount_str = match.group(1)
+                amount = re.sub(r'[^\d.]', '', amount_str)
+                if amount and len(amount) >= 5:
+                    try:
+                        float_amount = float(amount)
+                        if float_amount >= 100000:  # Minimum realistic sum insured
+                            result["sum_insured"] = f"R{float_amount:,.0f}"
+                            break
+                    except ValueError:
+                        continue
+            if result["sum_insured"] != "N/A":
                     break
 
-        # Extract building cover
+        # Extract building cover with context validation
         for pattern in fire_patterns["buildings"]:
-            match = re.search(pattern, text, re.I)
-            if match:
-                amount = re.sub(r'[^\d.]', '', match.group(1))
-                if amount:
-                    result["buildings_cover"] = f"R{amount}"
+            matches = re.finditer(pattern, text, re.I)
+            for match in matches:
+                # Get context around the match to validate
+                context_start = max(0, match.start() - 50)
+                context_end = min(len(text), match.end() + 50)
+                context = text[context_start:context_end]
+                
+                amount_str = match.group(1)
+                amount = re.sub(r'[^\d.]', '', amount_str)
+                if amount and len(amount) >= 5:
+                    try:
+                        float_amount = float(amount)
+                        if float_amount >= 100000:
+                            result["buildings_cover"] = f"R{float_amount:,.0f}"
                     result["sub_sections"].append("Building structure")
+                            break
+                    except ValueError:
+                        continue
+            if result["buildings_cover"] != "N/A":
                     break
 
         # Extract contents cover
         for pattern in fire_patterns["contents"]:
-            match = re.search(pattern, text, re.I)
-            if match:
-                amount = re.sub(r'[^\d.]', '', match.group(1))
-                if amount:
-                    result["contents_cover"] = f"R{amount}"
+            matches = re.finditer(pattern, text, re.I)
+            for match in matches:
+                amount_str = match.group(1)
+                amount = re.sub(r'[^\d.]', '', amount_str)
+                if amount and len(amount) >= 4:
+                    try:
+                        float_amount = float(amount)
+                        if float_amount >= 10000:
+                            result["contents_cover"] = f"R{float_amount:,.0f}"
                     result["sub_sections"].append("Contents")
+                            break
+                    except ValueError:
+                        continue
+            if result["contents_cover"] != "N/A":
                     break
 
-        # Extract excess
+        # Extract excess with better patterns
         for pattern in fire_patterns["excess"]:
             match = re.search(pattern, text, re.I)
             if match:
@@ -283,8 +385,27 @@ def extract_fire_section_specialized(text: str, quote_num: int) -> Dict:
                 else:
                     amount = re.sub(r'[^\d.]', '', match.group(1))
                     if amount:
-                        result["excess"] = f"R{amount}"
+                        try:
+                            float_amount = float(amount)
+                            result["excess"] = f"R{float_amount:,.0f}"
+                        except ValueError:
+                            pass
                 break
+
+        # Enhanced sub-section detection
+        subsection_patterns = {
+            "Building structure": [r"building\s+structure", r"main\s+building", r"property\s+structure"],
+            "Contents": [r"\bcontents\b", r"office\s+contents", r"business\s+contents"],
+            "Stock": [r"\bstock\b", r"stock\s+in\s+trade", r"trading\s+stock"],
+            "Loss of rent": [r"loss\s+of\s+rent", r"rent\s+loss", r"rental\s+income"],
+            "Debris removal": [r"debris\s+removal", r"clearing\s+costs", r"removal\s+costs"],
+            "Alternative accommodation": [r"alternative\s+accommodation", r"temporary\s+accommodation"]
+        }
+        
+        for subsection, patterns in subsection_patterns.items():
+            if any(re.search(pattern, text, re.I) for pattern in patterns):
+                if subsection not in result["sub_sections"]:
+                    result["sub_sections"].append(subsection)
 
     return result
 
@@ -583,6 +704,199 @@ def extract_sasria_specialized(text: str, quote_num: int) -> Dict:
 
     return result
 
+def professional_indemnity_agent(state: SectionAgentState) -> SectionAgentState:
+    """Specialized agent for Professional Indemnity section"""
+    documents = state.get("documents", [])
+    results = []
+
+    for i, doc in enumerate(documents):
+        pi_data = extract_professional_indemnity_specialized(doc, i + 1)
+        results.append(pi_data)
+
+    return {"section_results": results, "section_name": "Professional Indemnity"}
+
+def extract_professional_indemnity_specialized(text: str, quote_num: int) -> Dict:
+    """Specialized extraction for Professional Indemnity section"""
+
+    pi_patterns = {
+        "premium": [
+            r"Professional\s+Indemnity\s*.*?R\s?([\d,.\s]+)",
+            r"Professional\s+Indemnity\s*.*?Premium\s*.*?R\s?([\d,.\s]+)",
+            r"PI\s*.*?R\s?([\d,.\s]+)"
+        ],
+        "limit": [
+            r"Professional\s+Indemnity\s*.*?Limit\s*.*?R\s?([\d,.\s]{6,})",
+            r"PI\s+limit\s*.*?R\s?([\d,.\s]{6,})",
+            r"Professional\s+Indemnity\s*.*?R\s?([\d,.\s]{6,})"
+        ]
+    }
+
+    result = {
+        "quote_number": quote_num,
+        "section": "Professional Indemnity",
+        "included": "N",
+        "premium": "N/A",
+        "limit": "N/A",
+        "sub_sections": []
+    }
+
+    if re.search(r"Professional\s+Indemnity", text, re.I) or re.search(r"\bPI\b", text):
+        result["included"] = "Y"
+
+        for pattern in pi_patterns["premium"]:
+            match = re.search(pattern, text, re.I)
+            if match:
+                amount = re.sub(r'[^\d.]', '', match.group(1))
+                if amount and 50 <= float(amount) <= 10000:
+                    result["premium"] = f"R{amount}"
+                    break
+
+        for pattern in pi_patterns["limit"]:
+            match = re.search(pattern, text, re.I)
+            if match:
+                amount = re.sub(r'[^\d.]', '', match.group(1))
+                if amount and float(amount) >= 500000:
+                    result["limit"] = f"R{amount}"
+                    result["sub_sections"].append(f"Limit: {result['limit']}")
+                    break
+
+        # Check for specific PI sub-sections
+        if "errors" in text.lower() or "omissions" in text.lower():
+            result["sub_sections"].append("Errors and omissions")
+        if "legal costs" in text.lower():
+            result["sub_sections"].append("Legal costs")
+
+    return result
+
+def cyber_agent(state: SectionAgentState) -> SectionAgentState:
+    """Specialized agent for Cyber Insurance section"""
+    documents = state.get("documents", [])
+    results = []
+
+    for i, doc in enumerate(documents):
+        cyber_data = extract_cyber_specialized(doc, i + 1)
+        results.append(cyber_data)
+
+    return {"section_results": results, "section_name": "Cyber"}
+
+def extract_cyber_specialized(text: str, quote_num: int) -> Dict:
+    """Specialized extraction for Cyber Insurance section"""
+
+    cyber_patterns = {
+        "premium": [
+            r"Cyber\s*.*?R\s?([\d,.\s]+)",
+            r"Cyber\s+Insurance\s*.*?R\s?([\d,.\s]+)",
+            r"Data\s+breach\s*.*?R\s?([\d,.\s]+)"
+        ],
+        "limit": [
+            r"Cyber\s*.*?Limit\s*.*?R\s?([\d,.\s]{6,})",
+            r"Cyber\s*.*?R\s?([\d,.\s]{6,})",
+            r"Data\s+breach\s+limit\s*.*?R\s?([\d,.\s]{6,})"
+        ]
+    }
+
+    result = {
+        "quote_number": quote_num,
+        "section": "Cyber",
+        "included": "N",
+        "premium": "N/A",
+        "limit": "N/A",
+        "sub_sections": []
+    }
+
+    if re.search(r"\bCyber\b", text, re.I) or re.search(r"Data\s+breach", text, re.I):
+        result["included"] = "Y"
+
+        for pattern in cyber_patterns["premium"]:
+            match = re.search(pattern, text, re.I)
+            if match:
+                amount = re.sub(r'[^\d.]', '', match.group(1))
+                if amount and 100 <= float(amount) <= 15000:
+                    result["premium"] = f"R{amount}"
+                    break
+
+        for pattern in cyber_patterns["limit"]:
+            match = re.search(pattern, text, re.I)
+            if match:
+                amount = re.sub(r'[^\d.]', '', match.group(1))
+                if amount and float(amount) >= 100000:
+                    result["limit"] = f"R{amount}"
+                    break
+
+        # Check for cyber-specific sub-sections
+        if "data breach" in text.lower():
+            result["sub_sections"].append("Data breach")
+        if "cyber attack" in text.lower():
+            result["sub_sections"].append("Cyber attack")
+        if "business interruption" in text.lower():
+            result["sub_sections"].append("Business interruption")
+
+    return result
+
+def machinery_breakdown_agent(state: SectionAgentState) -> SectionAgentState:
+    """Specialized agent for Machinery Breakdown section"""
+    documents = state.get("documents", [])
+    results = []
+
+    for i, doc in enumerate(documents):
+        mb_data = extract_machinery_breakdown_specialized(doc, i + 1)
+        results.append(mb_data)
+
+    return {"section_results": results, "section_name": "Machinery Breakdown"}
+
+def extract_machinery_breakdown_specialized(text: str, quote_num: int) -> Dict:
+    """Specialized extraction for Machinery Breakdown section"""
+
+    mb_patterns = {
+        "premium": [
+            r"Machinery\s+Breakdown\s*.*?R\s?([\d,.\s]+)",
+            r"Machine\s+breakdown\s*.*?R\s?([\d,.\s]+)",
+            r"Mechanical\s+breakdown\s*.*?R\s?([\d,.\s]+)"
+        ],
+        "sum_insured": [
+            r"Machinery\s+Breakdown\s*.*?(?:Sum\s+Insured|Limit)\s*.*?R\s?([\d,.\s]{6,})",
+            r"Machinery\s*.*?R\s?([\d,.\s]{6,})"
+        ]
+    }
+
+    result = {
+        "quote_number": quote_num,
+        "section": "Machinery Breakdown",
+        "included": "N",
+        "premium": "N/A",
+        "sum_insured": "N/A",
+        "sub_sections": []
+    }
+
+    if re.search(r"Machinery\s+Breakdown", text, re.I):
+        result["included"] = "Y"
+
+        for pattern in mb_patterns["premium"]:
+            match = re.search(pattern, text, re.I)
+            if match:
+                amount = re.sub(r'[^\d.]', '', match.group(1))
+                if amount and 30 <= float(amount) <= 5000:
+                    result["premium"] = f"R{amount}"
+                    break
+
+        for pattern in mb_patterns["sum_insured"]:
+            match = re.search(pattern, text, re.I)
+            if match:
+                amount = re.sub(r'[^\d.]', '', match.group(1))
+                if amount and float(amount) >= 50000:
+                    result["sum_insured"] = f"R{amount}"
+                    break
+
+        # Check for specific breakdown types
+        if "mechanical" in text.lower():
+            result["sub_sections"].append("Mechanical breakdown")
+        if "electrical" in text.lower():
+            result["sub_sections"].append("Electrical breakdown")
+        if "explosion" in text.lower():
+            result["sub_sections"].append("Explosion")
+
+    return result
+
 # Create mapping for all specialized agents
 SECTION_AGENTS = {
     "Fire": fire_section_agent,
@@ -590,7 +904,10 @@ SECTION_AGENTS = {
     "Public liability": public_liability_agent,
     "Buildings combined": buildings_combined_agent,
     "Office contents": office_contents_agent,
-    "SASRIA": sasria_agent
+    "SASRIA": sasria_agent,
+    "Professional Indemnity": professional_indemnity_agent,
+    "Cyber": cyber_agent,
+    "Machinery Breakdown": machinery_breakdown_agent
 }
 
 def aggregate_section_results(state: SectionAgentState) -> SectionAgentState:
@@ -639,7 +956,7 @@ def aggregate_section_results(state: SectionAgentState) -> SectionAgentState:
     return {"results": final_results}
 
 def extract_basic_info(documents: List[str]) -> Dict:
-    """Extract basic information like vendor, total premium, contacts"""
+    """Extract basic information like vendor, total premium, contacts with enhanced accuracy"""
     vendors = []
     total_premiums = []
     phones = []
@@ -648,46 +965,126 @@ def extract_basic_info(documents: List[str]) -> Dict:
     clients = []
 
     for doc in documents:
-        # Extract vendor
+        # Enhanced vendor extraction with more comprehensive patterns
         vendor_patterns = [
-            r"(Hollard|Bryte|Sanlam|OUTsurance|Discovery|Momentum|King Price|Santam|Mutual|Guard|Old Mutual)",
-            r"Insurance Company[:\s]*([A-Za-z\s]+)",
-            r"Provider[:\s]*([A-Za-z\s]+)"
+            # Known South African insurers
+            r"(Hollard|Bryte|Sanlam|OUTsurance|Discovery|Momentum|King Price|Santam|Mutual & Federal|Old Mutual|Auto & General|Budget Insurance|1st for Women|Miway|Dial Direct|Absa|Standard Bank|FNB|Nedbank)",
+            # Generic patterns
+            r"(?:Insurance\s+Company|Insurer)[:\s]*([A-Za-z\s&]+?)(?:\n|Limited|Ltd|\(Pty\))",
+            r"(?:Provider|Underwriter)[:\s]*([A-Za-z\s&]+?)(?:\n|Limited|Ltd|\(Pty\))",
+            r"Quote\s+from[:\s]*([A-Za-z\s&]+?)(?:\n|Limited|Ltd|\(Pty\))",
+            r"([A-Za-z\s&]+?)\s+(?:Insurance|Assurance)(?:\s+Company)?",
+            # Header patterns
+            r"^([A-Z][A-Za-z\s&]+(?:Insurance|Assurance))",
+            # Letterhead patterns
+            r"([A-Z][A-Za-z\s&]{5,30})\s*(?:LIMITED|LTD|\(PTY\)\s*LTD)",
+            # Contact line patterns
+            r"(?:From|Insurer)[:\s]*([A-Za-z\s&]{8,40}?)(?:\s*\n|\s*Tel|\s*Phone|\s*Email)"
         ]
 
         vendor = "Unknown Provider"
         for pattern in vendor_patterns:
-            match = re.search(pattern, doc, re.I)
-            if match:
-                vendor = match.group(1).strip().title()
+            matches = re.finditer(pattern, doc, re.I | re.M)
+            for match in matches:
+                potential_vendor = match.group(1).strip()
+                # Clean up the vendor name
+                potential_vendor = re.sub(r'\s+', ' ', potential_vendor)
+                potential_vendor = potential_vendor.title()
+                
+                # Validate vendor name
+                if (len(potential_vendor) >= 4 and 
+                    not any(word in potential_vendor.lower() for word in ['policy', 'quote', 'premium', 'section', 'cover', 'claim', 'telephone', 'email', 'address']) and
+                    len(potential_vendor.split()) <= 4):
+                    vendor = potential_vendor
+                    break
+            if vendor != "Unknown Provider":
                 break
         vendors.append(vendor)
 
-        # Extract total premium
+        # Enhanced total premium extraction
         total_patterns = [
-            r"(?:Total|Monthly|Final|Debit)\s+(?:Premium|Total)[^\d]*R\s?([\d,.\s]+)",
-            r"TOTAL[^\d]*R\s?([\d,.\s]+)",
-            r"per\s+month[^\d]*R\s?([\d,.\s]+)"
+            r"(?:Total|Final|Monthly|Debit\s+Order)\s+(?:Premium|Amount|Cost)\s*[:\-]?\s*R\s?([\d,.\s]+)",
+            r"TOTAL\s+(?:PREMIUM|MONTHLY|COST)\s*[:\-]?\s*R\s?([\d,.\s]+)",
+            r"(?:Monthly|Per\s+month)\s+(?:premium|payment|cost)\s*[:\-]?\s*R\s?([\d,.\s]+)",
+            r"(?:Debit\s+order|DD)\s+amount\s*[:\-]?\s*R\s?([\d,.\s]+)",
+            r"Grand\s+Total\s*[:\-]?\s*R\s?([\d,.\s]+)",
+            r"Total\s+(?:cost|amount)\s+(?:per\s+month|monthly)\s*[:\-]?\s*R\s?([\d,.\s]+)",
+            # Look for total at end of premium sections
+            r"(?:TOTAL|Total)\s*[:\-]?\s*R\s?([\d,.\s]+)(?=\s*(?:\n|$|VAT|including|per\s+month))"
         ]
 
         total_premium = "N/A"
+        highest_amount = 0
+        
         for pattern in total_patterns:
-            match = re.search(pattern, doc, re.I)
-            if match:
-                amount = re.sub(r'[^\d.]', '', match.group(1))
+            matches = re.finditer(pattern, doc, re.I)
+            for match in matches:
+                amount_str = match.group(1)
+                amount = re.sub(r'[^\d.]', '', amount_str)
                 if amount and len(amount) >= 3:
                     try:
                         float_amount = float(amount)
-                        if 100 <= float_amount <= 100000:
+                        # Look for the highest realistic total premium
+                        if 200 <= float_amount <= 100000 and float_amount > highest_amount:
+                            highest_amount = float_amount
                             total_premium = f"R{float_amount:,.2f}".rstrip('0').rstrip('.')
-                            break
                     except ValueError:
                         continue
+        
+        # If no specific total found, try to sum individual premiums
+        if total_premium == "N/A":
+            premium_sum = calculate_total_from_sections(doc)
+            if premium_sum > 0:
+                total_premium = f"R{premium_sum:,.2f}".rstrip('0').rstrip('.')
+                
         total_premiums.append(total_premium)
 
-        # Extract other basic info
-        phones.append(extract_payment_terms(doc))  # Reusing existing function
-        emails.append("N/A")
+        # Enhanced phone number extraction
+        phone_patterns = [
+            r"(?:Tel|Phone|Telephone|Call)[:\s]*(\+?27\s?[\d\s\-]{8,14})",
+            r"(?:Tel|Phone|Telephone|Call)[:\s]*(0[\d\s\-]{8,12})",
+            r"(?:Cell|Mobile|Cel)[:\s]*(\+?27\s?[\d\s\-]{8,14})",
+            r"(?:Contact|Call)[:\s]*(\+?27\s?[\d\s\-]{8,14})",
+            r"(\+27\s?[\d\s\-]{8,14})",
+            r"(0[\d\s\-]{8,12})",
+            # Specific patterns for SA numbers
+            r"(011\s?[\d\s\-]{6,9})",  # Johannesburg
+            r"(021\s?[\d\s\-]{6,9})",  # Cape Town
+            r"(031\s?[\d\s\-]{6,9})"   # Durban
+        ]
+        
+        phone = "N/A"
+        for pattern in phone_patterns:
+            match = re.search(pattern, doc, re.I)
+            if match:
+                phone_num = match.group(1).strip()
+                # Clean up phone number
+                phone_num = re.sub(r'[^\d+\s]', ' ', phone_num)
+                phone_num = re.sub(r'\s+', ' ', phone_num).strip()
+                if len(re.sub(r'[^\d]', '', phone_num)) >= 9:  # Valid phone length
+                    phone = phone_num
+                    break
+        phones.append(phone)
+
+        # Enhanced email extraction
+        email_patterns = [
+            r"(?:Email|E-mail)[:\s]*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})",
+            r"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})",
+            r"(?:Contact|Write\s+to)[:\s]*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"
+        ]
+        
+        email = "N/A"
+        for pattern in email_patterns:
+            match = re.search(pattern, doc, re.I)
+            if match:
+                email_addr = match.group(1).strip().lower()
+                # Validate email
+                if '@' in email_addr and '.' in email_addr and len(email_addr) > 5:
+                    email = email_addr
+                    break
+        emails.append(email)
+
+        # Enhanced address and client extraction
         addresses.append(extract_risk_address(doc))
         clients.append(extract_client_details(doc))
 
@@ -699,6 +1096,42 @@ def extract_basic_info(documents: List[str]) -> Dict:
         "addresses": addresses,
         "clients": clients
     }
+
+def calculate_total_from_sections(text: str) -> float:
+    """Calculate total premium by summing individual section premiums"""
+    total = 0
+    section_premiums = []
+    
+    # Look for individual section premiums
+    for section in POLICY_SECTIONS:
+        premium_patterns = [
+            rf"{re.escape(section)}\s*[:\-]?\s*.*?R\s?([\d,.\s]+)",
+            rf"{re.escape(section)}\s+(?:Premium|Monthly)\s*[:\-]?\s*R\s?([\d,.\s]+)"
+        ]
+        
+        for pattern in premium_patterns:
+            matches = re.finditer(pattern, text, re.I)
+            for match in matches:
+                amount_str = match.group(1)
+                amount = re.sub(r'[^\d.]', '', amount_str)
+                if amount:
+                    try:
+                        float_amount = float(amount)
+                        # Reasonable premium range per section
+                        if 10 <= float_amount <= 20000:
+                            section_premiums.append(float_amount)
+                            break
+                    except ValueError:
+                        continue
+            if section_premiums:
+                break
+    
+    # Sum unique premiums (avoid duplicates)
+    if section_premiums:
+        unique_premiums = list(set(section_premiums))
+        total = sum(unique_premiums)
+    
+    return total
 
 def parse_insurance_quote(text: str) -> Dict:
     """Enhanced parsing using specialized section agents"""
@@ -836,26 +1269,41 @@ def extract_section_details(text: str, section_name: str) -> Dict:
     # Get the raw section text
     section_text = extract_section_raw_text(text, section_name)
 
-    # Enhanced patterns for better detection
+    # Enhanced patterns for better detection with case-insensitive and flexible matching
+    escaped_section = re.escape(section_name)
+    
     premium_patterns = [
-        rf"{re.escape(section_name)}\s*[:\-]?\s*.*?R\s?([\d,.\s]+)",
-        rf"Premium\s*[:\-]?\s*{re.escape(section_name)}\s*.*?R\s?([\d,.\s]+)",
-        rf"{re.escape(section_name)}\s*.*?Monthly\s*.*?R\s?([\d,.\s]+)"
+        rf"{escaped_section}\s*[:\-]?\s*(?:Premium|Monthly|PM)?\s*[:\-]?\s*R\s?([\d,.\s]+)",
+        rf"Premium\s*[:\-]?\s*{escaped_section}\s*[:\-]?\s*R\s?([\d,.\s]+)",
+        rf"{escaped_section}\s*.*?(?:Monthly|per\s+month|PM)\s*[:\-]?\s*R\s?([\d,.\s]+)",
+        rf"{escaped_section}\s*Section\s*[:\-]?\s*R\s?([\d,.\s]+)",
+        # More flexible patterns
+        rf"{escaped_section}(?:\s+Insurance|\s+Cover|\s+Section)?\s*[:\-]?\s*R\s?([\d,.\s]+)",
+        rf"(?:Monthly\s+)?{escaped_section}\s*[:\-]?\s*R\s?([\d,.\s]+)"
     ]
 
     sum_insured_patterns = [
-        rf"{re.escape(section_name)}\s*[:\-]?\s*.*?(?:Sum\s+Insured|Limit|Value)\s*.*?R\s?([\d,.\s]+)",
-        rf"(?:Sum\s+Insured|Limit|Value)\s*[:\-]?\s*{re.escape(section_name)}\s*.*?R\s?([\d,.\s]+)",
-        rf"{re.escape(section_name)}\s*.*?R\s?([\d,.\s]{6,})"  # Large amounts likely sum insured
+        rf"{escaped_section}\s*[:\-]?\s*.*?(?:Sum\s+Insured|Limit|Value|Cover)\s*[:\-]?\s*R\s?([\d,.\s]{5,})",
+        rf"(?:Sum\s+Insured|Limit|Value|Cover)\s*[:\-]?\s*{escaped_section}\s*[:\-]?\s*R\s?([\d,.\s]{5,})",
+        rf"{escaped_section}\s*[:\-]?\s*(?:Buildings?|Contents?|Property)\s*[:\-]?\s*R\s?([\d,.\s]{5,})",
+        rf"{escaped_section}\s*.*?R\s?([\d,.\s]{5,})(?=\s*(?:limit|cover|insured))",  # Large amounts likely sum insured
+        # Building and contents specific patterns
+        rf"(?:Building|Property|Structure)\s*.*?{escaped_section}\s*[:\-]?\s*R\s?([\d,.\s]{5,})",
+        rf"Contents\s*.*?{escaped_section}\s*[:\-]?\s*R\s?([\d,.\s]{5,})"
     ]
 
     included_patterns = [
-        rf"{re.escape(section_name)}\s*[:\-]?\s*.*?(?:Yes|Y|Included|✓|Covered)",
-        rf"{re.escape(section_name)}\s*[:\-]?\s*.*?R\s?[\d,.\s]+",  # If has premium, likely included
+        rf"{escaped_section}\s*[:\-]?\s*(?:Yes|Y|Included|✓|Covered|Available)",
+        rf"{escaped_section}\s*[:\-]?\s*R\s?[\d,.\s]+",  # If has premium, likely included
+        rf"{escaped_section}\s+Section\s*[:\-]?\s*(?:Yes|Y|Included)",
+        rf"✓\s*{escaped_section}",
+        rf"{escaped_section}\s*.*?(?:applicable|included|covered)"
     ]
 
     excluded_patterns = [
-        rf"{re.escape(section_name)}\s*[:\-]?\s*.*?(?:No|N|Not\s+included|✗|Excluded|Not\s+covered)"
+        rf"{escaped_section}\s*[:\-]?\s*(?:No|N|Not\s+included|✗|Excluded|Not\s+covered|N/A)",
+        rf"✗\s*{escaped_section}",
+        rf"{escaped_section}\s*.*?(?:excluded|not\s+applicable|not\s+covered)"
     ]
 
     premium = "N/A"
@@ -865,84 +1313,113 @@ def extract_section_details(text: str, section_name: str) -> Dict:
     extensions = []
     deductibles = {}
 
-    # Check if section is included
+    # Check if section is included with enhanced logic
+    has_positive_indicators = False
+    has_negative_indicators = False
+    
     for pattern in included_patterns:
         if re.search(pattern, text, re.I):
-            included = "Y"
+            has_positive_indicators = True
             break
 
     for pattern in excluded_patterns:
         if re.search(pattern, text, re.I):
-            included = "N"
+            has_negative_indicators = True
             break
 
-    # Extract premium with better accuracy
+    # Enhanced inclusion logic
+    if has_positive_indicators and not has_negative_indicators:
+        included = "Y"
+    elif has_negative_indicators:
+        included = "N"
+    
+    # Extract premium with enhanced validation
     for pattern in premium_patterns:
-        match = re.search(pattern, text, re.I)
-        if match:
-            amount = re.sub(r'[^\d.]', '', match.group(1))
-            if amount and len(amount) > 1:
+        matches = re.finditer(pattern, text, re.I)
+        for match in matches:
+            amount_str = match.group(1)
+            amount = re.sub(r'[^\d.]', '', amount_str)
+            if amount and len(amount) >= 2:
                 try:
                     float_amount = float(amount)
-                    if 10 <= float_amount <= 50000:  # Reasonable premium range
-                        premium = f"R{amount}"
-                        included = "Y"
+                    # Enhanced premium validation based on section type
+                    min_premium, max_premium = get_premium_range(section_name)
+                    if min_premium <= float_amount <= max_premium:
+                        premium = f"R{float_amount:,.2f}".rstrip('0').rstrip('.')
+                        included = "Y"  # If valid premium found, section is included
                         break
                 except ValueError:
                     continue
+        if premium != "N/A":
+            break
 
-    # Extract sum insured with better accuracy
+    # Extract sum insured with enhanced validation
     for pattern in sum_insured_patterns:
-        match = re.search(pattern, text, re.I)
-        if match:
-            amount = re.sub(r'[^\d.]', '', match.group(1))
+        matches = re.finditer(pattern, text, re.I)
+        for match in matches:
+            amount_str = match.group(1)
+            amount = re.sub(r'[^\d.]', '', amount_str)
             if amount and len(amount) >= 4:
                 try:
                     float_amount = float(amount)
-                    if float_amount >= 1000:  # Reasonable sum insured minimum
-                        sum_insured = f"R{amount}"
+                    # Enhanced sum insured validation
+                    min_sum = get_minimum_sum_insured(section_name)
+                    if float_amount >= min_sum:
+                        sum_insured = f"R{float_amount:,.0f}"
                         break
                 except ValueError:
                     continue
+        if sum_insured != "N/A":
+            break
 
-    # Extract detailed items for specific sections
-    if section_name.lower() in ["business all risks", "all risks", "office contents", "electronic equipment"]:
-        detailed_items = parse_all_risks_detailed(section_text)
+    # Extract detailed items for specific sections with better patterns
+    if section_name.lower() in ["business all risks", "all risks", "office contents", "electronic equipment", "personal, all risks"]:
+        detailed_items = parse_all_risks_detailed(section_text if section_text else text)
 
-    # Extract sub-sections if available with enhanced detection
+    # Extract sub-sections with enhanced detection
     sub_sections = []
     if section_name in SECTION_SUBSECTIONS:
         for subsection in SECTION_SUBSECTIONS[section_name]:
-            if re.search(rf"\b{re.escape(subsection)}\b", text, re.I):
+            # Use flexible matching for sub-sections
+            subsection_patterns = [
+                rf"\b{re.escape(subsection)}\b",
+                rf"{re.escape(subsection)}",
+                rf"{re.escape(subsection.replace(' ', r'\s+'))}"
+            ]
+            if any(re.search(pattern, text, re.I) for pattern in subsection_patterns):
                 sub_sections.append(subsection)
 
-    # Also extract any detailed items found in the section text
-    if section_text and section_name.lower() in ["business all risks", "all risks", "office contents", "electronic equipment", "buildings combined"]:
-        detailed_items = parse_all_risks_detailed(section_text)
-        if detailed_items:
-            # Add item descriptions as sub-sections
-            for item in detailed_items[:5]:  # Limit to first 5 items
-                if item.get('description'):
+    # Enhanced detailed items extraction for applicable sections
+    if section_text and section_name.lower() in ["business all risks", "all risks", "office contents", "electronic equipment", "buildings combined", "personal, all risks"]:
+        items = parse_all_risks_detailed(section_text)
+        if items:
+            detailed_items.extend(items)
+            # Add item descriptions as sub-sections for better visibility
+            for item in items[:3]:  # Limit to first 3 items to avoid clutter
+                if item.get('description') and len(item['description']) < 50:
                     sub_sections.append(item['description'])
 
-    # Extract extensions
+    # Extract extensions with better patterns
     extension_patterns = [
-        r"(?:Includes?|Extensions?|Additional\s+cover)[:\s]*((?:[^.\n]+\.?\s*){1,3})",
-        r"(?:Cover\s+for|Covering)[:\s]*((?:[^.\n]+\.?\s*){1,3})"
+        r"(?:Includes?|Extensions?|Additional\s+cover|Also\s+covers?)[:\s]*((?:[^.\n]+\.?\s*){1,3})",
+        r"(?:Cover\s+for|Covering|Extended\s+to)[:\s]*((?:[^.\n]+\.?\s*){1,3})",
+        r"(?:Plus|Including)[:\s]*((?:[^.\n]+\.?\s*){1,2})"
     ]
 
+    context_text = section_text if section_text else text
     for pattern in extension_patterns:
-        for match in re.finditer(pattern, section_text, re.I):
+        for match in re.finditer(pattern, context_text, re.I):
             ext_text = match.group(1).strip()
-            if len(ext_text) > 5:
+            if 5 < len(ext_text) < 100:  # Reasonable length for extensions
                 extensions.append({"description": ext_text})
 
-    # Extract deductibles/excess
+    # Extract deductibles/excess with enhanced patterns
     excess_patterns = [
-        rf"{re.escape(section_name)}\s*.*?(?:Excess|Deductible)\s*.*?R\s?([\d,.\s]+)",
+        rf"{escaped_section}\s*.*?(?:Excess|Deductible)\s*[:\-]?\s*R\s?([\d,.\s]+)",
         r"(?:Standard\s+)?(?:Excess|Deductible)\s*[:\-]?\s*R\s?([\d,.\s]+)",
-        r"(\d+)%\s+of\s+claim",
-        r"Minimum\s+R\s?([\d,.\s]+)"
+        r"(\d+)%\s+of\s+(?:claim|loss)",
+        r"Minimum\s+(?:excess\s+)?R\s?([\d,.\s]+)",
+        rf"(?:Excess|Deductible)\s*.*?{escaped_section}\s*[:\-]?\s*R\s?([\d,.\s]+)"
     ]
 
     for pattern in excess_patterns:
@@ -953,7 +1430,12 @@ def extract_section_details(text: str, section_name: str) -> Dict:
             else:
                 amount = re.sub(r'[^\d.]', '', match.group(1))
                 if amount:
-                    deductibles["standard"] = f"R{amount}"
+                    try:
+                        float_amount = float(amount)
+                        deductibles["standard"] = f"R{float_amount:,.0f}"
+                    except ValueError:
+                        pass
+            break
 
     return {
         "included": included,
@@ -966,6 +1448,43 @@ def extract_section_details(text: str, section_name: str) -> Dict:
         "deductibles": deductibles
     }
 
+def get_premium_range(section_name: str) -> tuple:
+    """Get realistic premium range for different insurance sections"""
+    premium_ranges = {
+        "Fire": (50, 15000),
+        "Buildings combined": (100, 20000),
+        "Motor General": (500, 25000),
+        "Public liability": (80, 8000),
+        "Professional Indemnity": (200, 12000),
+        "Cyber": (150, 10000),
+        "Machinery Breakdown": (50, 5000),
+        "Electronic equipment": (30, 3000),
+        "SASRIA": (20, 2000),
+        "Office contents": (40, 4000),
+        "Business interruption": (100, 8000),
+        "Theft": (30, 3000),
+        "Glass": (20, 1000),
+        "Money": (30, 2000)
+    }
+    return premium_ranges.get(section_name, (20, 50000))  # Default range
+
+def get_minimum_sum_insured(section_name: str) -> float:
+    """Get minimum realistic sum insured for different sections"""
+    min_sums = {
+        "Fire": 100000,
+        "Buildings combined": 200000,
+        "Motor General": 50000,
+        "Public liability": 100000,
+        "Professional Indemnity": 500000,
+        "Cyber": 100000,
+        "Machinery Breakdown": 50000,
+        "Electronic equipment": 10000,
+        "Office contents": 20000,
+        "Business interruption": 50000,
+        "Personal, All Risks": 5000,
+        "Watercraft": 50000
+    }
+    return min_sums.get(section_name, 10000)  # Default minimum
 
 def extract_payment_terms(text: str) -> str:
     payment_patterns = [
@@ -1282,6 +1801,9 @@ def build_specialized_langgraph():
     graph.add_node("buildings_agent", buildings_combined_agent)
     graph.add_node("contents_agent", office_contents_agent)
     graph.add_node("sasria_agent", sasria_agent)
+    graph.add_node("pi_agent", professional_indemnity_agent)
+    graph.add_node("cyber_agent", cyber_agent)
+    graph.add_node("mb_agent", machinery_breakdown_agent)
 
     # Aggregator agent to combine results
     graph.add_node("aggregator", aggregate_section_results)
@@ -1293,7 +1815,10 @@ def build_specialized_langgraph():
     graph.add_edge("liability_agent", "buildings_agent")
     graph.add_edge("buildings_agent", "contents_agent")
     graph.add_edge("contents_agent", "sasria_agent")
-    graph.add_edge("sasria_agent", "aggregator")
+    graph.add_edge("sasria_agent", "pi_agent")
+    graph.add_edge("pi_agent", "cyber_agent")
+    graph.add_edge("cyber_agent", "mb_agent")
+    graph.add_edge("mb_agent", "aggregator")
     graph.add_edge("aggregator", END)
 
     return graph.compile()
@@ -2231,7 +2756,7 @@ def create_detailed_pdf_html(data: List[Dict]) -> str:
         </table>
     </div>
 
-    <div class="section-title">GENERAL SECTION</div>
+    <div class="section-title">Professional Indemnity</div>
     <div class="general-section">
         <h4>Policy Terms and Conditions</h4>
         <div class="conditions-text">
@@ -2243,16 +2768,27 @@ def create_detailed_pdf_html(data: List[Dict]) -> str:
         </div>
     </div>
 
-    <div class="section-title">CONDITIONS AND EXCLUSIONS</div>
+    <div class="section-title">Cyber Insurance</div>
     <div class="general-section">
-        <h4>Important Terms and Exclusions</h4>
+        <h4>Policy Terms and Conditions</h4>
         <div class="conditions-text">
-            <p><strong>General Exclusions:</strong> War, nuclear risks, terrorism (except where specifically covered), wear and tear, gradual deterioration, inherent vice, latent defect, vermin, insects, atmospheric or climatic conditions.</p>
-            <p><strong>Security Requirements:</strong> Compliance with all security requirements as specified in the policy is mandatory.</p>
-            <p><strong>Alterations:</strong> Any material alterations to the risk must be notified to insurers immediately.</p>
-            <p><strong>Premium Payment:</strong> Non-payment of premium may result in cancellation of cover.</p>
-            <p><strong>Jurisdiction:</strong> This policy is governed by South African law and subject to South African jurisdiction.</p>
-            <p><strong>Complaints:</strong> Any complaints should be directed to the relevant insurance company's complaints department or the Insurance Ombudsman.</p>
+            <p><strong>Policy Period:</strong> 12 months from commencement date unless otherwise stated</p>
+            <p><strong>Payment Terms:</strong> Monthly premium debit order or annual payment options available</p>
+            <p><strong>Renewal:</strong> Subject to annual review and acceptance by insurers</p>
+            <p><strong>Claims Procedure:</strong> All claims must be reported within 30 days of occurrence</p>
+            <p><strong>Risk Address:</strong> Coverage applies to the specified risk address only</p>
+        </div>
+    </div>
+
+    <div class="section-title">Machinery Breakdown</div>
+    <div class="general-section">
+        <h4>Policy Terms and Conditions</h4>
+        <div class="conditions-text">
+            <p><strong>Policy Period:</strong> 12 months from commencement date unless otherwise stated</p>
+            <p><strong>Payment Terms:</strong> Monthly premium debit order or annual payment options available</p>
+            <p><strong>Renewal:</strong> Subject to annual review and acceptance by insurers</p>
+            <p><strong>Claims Procedure:</strong> All claims must be reported within 30 days of occurrence</p>
+            <p><strong>Risk Address:</strong> Coverage applies to the specified risk address only</p>
         </div>
     </div>
 
@@ -2703,7 +3239,7 @@ def home_page():
 if __name__ == "__main__":
     print("🚀 Starting Enhanced Insurance Quote Comparison System...")
     print("📋 Professional template-based PDF report generation enabled")
-    print("🔗 Access the application at: http://0.0.0.0:8000")
+    print("🔗 Access the application at: http://0.0.0.0:5000")
 
     # Install required packages
     print("📦 Installing required packages...")
@@ -2711,7 +3247,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app", 
         host="0.0.0.0", 
-        port=8000, 
+        port=5000, 
         reload=True,
         log_level="info"
     )

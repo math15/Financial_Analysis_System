@@ -2,15 +2,31 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Upload, AlertCircle } from "lucide-react"
+import { Upload, AlertCircle, CheckCircle, X, FileText } from "lucide-react"
+import { useUploadQuotes } from "@/lib/hooks"
+import { useRouter } from "next/navigation"
 
 export default function UploadPDFPage() {
-  const [selectedType, setSelectedType] = useState("Personal Lines Insurance")
+  const [selectedType, setSelectedType] = useState("Commercial Lines Insurance")
   const [dragActive, setDragActive] = useState(false)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [uploadResult, setUploadResult] = useState<any>(null)
+  
+  const { uploadFiles, uploading, error } = useUploadQuotes()
+  const router = useRouter()
+
+  // Debug: Log the current environment and API URL
+  useEffect(() => {
+    console.log('Environment:', {
+      hostname: typeof window !== 'undefined' ? window.location.hostname : 'server',
+      protocol: typeof window !== 'undefined' ? window.location.protocol : 'server',
+      NODE_ENV: process.env.NODE_ENV
+    })
+  }, [])
 
   const insuranceTypes = [
     {
@@ -53,7 +69,61 @@ export default function UploadPDFPage() {
     e.preventDefault()
     e.stopPropagation()
     setDragActive(false)
-    // Handle file drop logic here
+    
+    const files = Array.from(e.dataTransfer.files).filter(file => 
+      file.type === 'application/pdf' && file.size <= 20 * 1024 * 1024  // Updated to 20MB
+    )
+    
+    if (files.length > 0) {
+      setSelectedFiles(prev => [...prev, ...files])
+    }
+  }
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('File select triggered', e.target.files)
+    const files = Array.from(e.target.files || []).filter(file => 
+      file.type === 'application/pdf' && file.size <= 20 * 1024 * 1024  // Updated to 20MB
+    )
+    
+    console.log('Filtered files:', files)
+    
+    if (files.length > 0) {
+      setSelectedFiles(prev => [...prev, ...files])
+      console.log('Files added to state')
+    } else {
+      console.log('No valid files selected')
+    }
+  }
+
+  const handleButtonClick = () => {
+    console.log('Button clicked - triggering file input')
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement
+    if (fileInput) {
+      fileInput.click()
+      console.log('File input clicked programmatically')
+    } else {
+      console.error('File input not found')
+    }
+  }
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleUpload = async () => {
+    if (selectedFiles.length === 0) return
+
+    const result = await uploadFiles(selectedFiles)
+    if (result) {
+      setUploadResult(result)
+      setSelectedFiles([])
+    }
+  }
+
+  const viewResults = () => {
+    if (uploadResult?.comparison_id) {
+      router.push(`/compare-policies?id=${uploadResult.comparison_id}`)
+    }
   }
 
   return (
@@ -97,6 +167,56 @@ export default function UploadPDFPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Upload Insurance Quotes</h1>
           <p className="text-blue-600">Upload your insurance quote PDFs to start comparing coverage and pricing.</p>
         </div>
+
+        {/* Upload Success Message */}
+        {uploadResult && (
+          <Card className="bg-green-50 border border-green-200 mb-8">
+            <CardContent className="p-6">
+              <div className="flex items-start space-x-3">
+                <CheckCircle className="w-6 h-6 text-green-600 mt-1" />
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-green-900 mb-2">Upload Successful!</h3>
+                  <p className="text-green-800 mb-4">
+                    {uploadResult.message} - {uploadResult.quote_count} quotes processed
+                  </p>
+                  <div className="flex space-x-3">
+                    <Button 
+                      onClick={viewResults}
+                      className="bg-green-600 text-white hover:bg-green-700"
+                    >
+                      View Comparison Results
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setUploadResult(null)}
+                      className="border-green-300 text-green-700 hover:bg-green-50"
+                    >
+                      Upload More Files
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <Card className="bg-red-50 border border-red-200 mb-8">
+            <CardContent className="p-6">
+              <div className="flex items-start space-x-3">
+                <AlertCircle className="w-6 h-6 text-red-600 mt-1" />
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-red-900 mb-2">Upload Failed</h3>
+                  <p className="text-red-800 mb-4">{error}</p>
+                  <p className="text-red-700 text-sm">
+                    Make sure the backend is running on port 5000. Run: <code className="bg-red-100 px-1 rounded">cd backend && source venv/bin/activate && python run.py</code>
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Insurance Type Selection */}
         <Card className="bg-white border border-gray-200 mb-8">
@@ -146,8 +266,8 @@ export default function UploadPDFPage() {
                 <p className="text-gray-600 text-sm">0 of 2 reports used this month</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-600">Max 3 quotes per comparison</p>
-                <p className="text-sm text-gray-600">Currently: 0 quotes uploaded</p>
+                <p className="text-sm text-gray-600">Max 10 quotes per comparison</p>
+                <p className="text-sm text-gray-600">Currently: {selectedFiles.length} quotes selected</p>
               </div>
             </div>
             <div className="mt-4 flex items-center text-orange-600">
@@ -157,12 +277,60 @@ export default function UploadPDFPage() {
           </CardContent>
         </Card>
 
+        {/* Selected Files */}
+        {selectedFiles.length > 0 && (
+          <Card className="bg-white border border-gray-200 mb-8">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Selected Files ({selectedFiles.length})</h3>
+              <div className="space-y-3">
+                {selectedFiles.map((file, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <FileText className="w-5 h-5 text-blue-600" />
+                      <div>
+                        <p className="font-medium text-gray-900">{file.name}</p>
+                        <p className="text-sm text-gray-600">
+                          {(file.size / (1024 * 1024)).toFixed(2)} MB
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeFile(index)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 flex space-x-3">
+                <Button 
+                  onClick={handleUpload}
+                  disabled={uploading}
+                  className="bg-green-600 text-white hover:bg-green-700"
+                >
+                  {uploading ? "Processing..." : `Upload ${selectedFiles.length} Files`}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSelectedFiles([])}
+                  disabled={uploading}
+                >
+                  Clear All
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Upload Section */}
         <Card className="bg-white border border-gray-200">
           <CardContent className="p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload PDF Files</h3>
             <p className="text-gray-600 text-sm mb-6">
-              Drag and drop your insurance quote PDFs here, or click to select files. Maximum file size: 10MB per file.
+              Drag and drop your insurance quote PDFs here, or click to select files. Maximum file size: 20MB per file.
             </p>
 
             <div
@@ -177,7 +345,24 @@ export default function UploadPDFPage() {
               <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h4 className="text-lg font-medium text-gray-900 mb-2">Drop your PDF files here</h4>
               <p className="text-gray-600 mb-4">or click to browse and select files</p>
-              <Button className="bg-black text-white hover:bg-gray-800">Select PDF Files</Button>
+              <Button onClick={handleButtonClick} className="bg-black text-white hover:bg-gray-800">
+                Select PDF Files
+              </Button>
+              <input
+                id="file-upload"
+                type="file"
+                multiple
+                accept=".pdf"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              
+              {/* Debug info */}
+              <div className="mt-4 text-xs text-gray-500">
+                <p>Selected files: {selectedFiles.length}</p>
+                <p>Upload status: {uploading ? 'Uploading...' : 'Ready'}</p>
+                {error && <p className="text-red-500">Error: {error}</p>}
+              </div>
             </div>
 
             <div className="mt-6 flex items-start space-x-2 bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -185,7 +370,7 @@ export default function UploadPDFPage() {
               <div>
                 <p className="text-sm text-blue-800">
                   <span className="font-medium">Requirements:</span> Only PDF files are accepted. Maximum file size is
-                  10MB. Files should contain insurance quote information for best results.
+                  20MB. Files should contain insurance quote information for best results.
                 </p>
               </div>
             </div>
