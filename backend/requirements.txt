@@ -45,4 +45,7 @@ pydantic-settings==2.1.0
 
 # Testing (optional)
 pytest==7.4.3
-httpx==0.25.2 
+httpx==0.25.2
+
+# OpenRouter/OpenAI SDK
+openai>=1.30.0 

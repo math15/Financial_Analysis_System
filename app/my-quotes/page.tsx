@@ -249,14 +249,14 @@ export default function MyQuotesPage() {
                       )}
                       {/* 🆕 Updated Download Report Button */}
                       {(quote as any).report_generated ? (
-                        <Button 
+                      <Button 
                           onClick={() => {
                             const downloadUrl = insuranceAPI.getReportDownloadUrl((quote as any).report_filename);
                             window.open(downloadUrl, '_blank');
                           }}
-                          variant="outline" 
-                          size="sm"
-                          className="w-full sm:w-auto lg:w-full"
+                        variant="outline" 
+                        size="sm"
+                        className="w-full sm:w-auto lg:w-full"
                         >
                           📄 Download PDF
                         </Button>
@@ -268,7 +268,7 @@ export default function MyQuotesPage() {
                           disabled
                         >
                           {quote.status === "processing" ? "⏳ Processing..." : "📄 No Report"}
-                        </Button>
+                      </Button>
                       )}
                     </div>
             </div>

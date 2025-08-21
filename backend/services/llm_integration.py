@@ -268,7 +268,7 @@ class LLMIntegrationService:
         
         return analysis
     
-    def extract_structured_data(self, text: str) -> Dict[str, Any]:
+    def extract_structured_data(self, text: str, filename: str = "unknown") -> Dict[str, Any]:
         """Extract structured data using LLM or fallback methods"""
         
         structured_prompt = f"""
@@ -308,11 +308,11 @@ class LLMIntegrationService:
             except Exception as e:
                 print(f"⚠️ LLM structured analysis failed: {e}")
         
-        # Local fallback
+        # Local fallback with real data extraction
         from .fpdf_report_generator import FPDFReportGenerator
+        print("🔄 Using comprehensive local pattern-based analysis as fallback")
         generator = FPDFReportGenerator()
-        
-        return generator._extract_structured_data_with_llm(text)
+        return generator._extract_structured_data_with_llm(text, filename)
     
     def assess_risks(self, text: str) -> Dict[str, Any]:
         """Assess risks using LLM analysis"""

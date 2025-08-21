@@ -124,7 +124,7 @@ class PDFExtractor:
                         text += f"\n<<<PAGE_BREAK>>> Page {page_num} <<<PAGE_BREAK>>>\n"
                         text += page_text
                         text += "\n"
-            
+                
             if len(text.strip()) > 50:
                 print(f"✅ pdfplumber extracted {len(text):,} characters")
                 return text
@@ -149,7 +149,7 @@ class PDFExtractor:
                         text += f"\n<<<PAGE_BREAK>>> Page {page_num} <<<PAGE_BREAK>>>\n"
                         text += page_text
                         text += "\n"
-            
+
             if len(text.strip()) > 50:
                 print(f"✅ PyPDF2 extracted {len(text):,} characters")
                 return text
@@ -166,7 +166,7 @@ class PDFExtractor:
     def _generate_sample_data(self, file_path: str) -> str:
         """Generate sample data for demonstration when extraction fails"""
         filename = os.path.basename(file_path).lower()
-        
+
         print(f"🎭 Generating sample data for: {filename}")
         
         if "policy" in filename or "ptah" in filename or "hollard" in filename:
@@ -176,11 +176,11 @@ HOLLARD INSURANCE COMPANY
 COMMERCIAL INSURANCE POLICY SCHEDULE
 
 Policy Number: P000155535
-Client: Sample Manufacturing (Pty) Ltd
+            Client: Sample Manufacturing (Pty) Ltd
 Risk Address: 123 Business Park, Johannesburg, 2000
 Policy Period: 12 months from inception
 
-POLICY SECTIONS & PREMIUMS:
+            POLICY SECTIONS & PREMIUMS:
 Buildings Combined: Yes - R 244.95 - Sum Insured: R 1,155,000
   Security Services: R 15,000
   Garden Tools: R 10,000  
@@ -227,7 +227,7 @@ Client: Olijvenhof Owner Association
 Business Address: Olijvenhof Estate, Cape Town, 7500
 Quotation Date: 04/02/2024
 
-COVERAGE BREAKDOWN:
+            COVERAGE BREAKDOWN:
 Fire & Allied Perils: Yes - R 520.30
   Buildings: R 1,500,000
   Contents: R 600,000
@@ -271,8 +271,8 @@ TOTAL MONTHLY PREMIUM: R 3,891.50 (Including VAT)
 ANNUAL PREMIUM: R 46,698.00
 
 Contact Information:
-Phone: 0860 444 444
-Email: business@bytes.co.za
+            Phone: 0860 444 444
+            Email: business@bytes.co.za
 Website: www.bytes.co.za
 FSP License: 47693
 
@@ -290,7 +290,7 @@ Policy Reference: CQ-{int(time.time())}
 Business Name: Generic Commercial Enterprise
 Premises: Standard Business Address, Pretoria, 0001
 
-SECTION PREMIUMS:
+            SECTION PREMIUMS:
 Fire Section: Yes - R 380.90
   Property Value: R 1,800,000
   Contents: R 400,000
@@ -333,7 +333,7 @@ ANNUAL TOTAL: R 34,622.40
 
 Contact Information:
 Phone: 0860 756 756
-Email: commercial@generic.co.za
+            Email: commercial@generic.co.za
 FSP Number: 12345
             """
     

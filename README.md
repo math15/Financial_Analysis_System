@@ -50,23 +50,23 @@ A comprehensive platform for analyzing and comparing insurance quotes using **LL
 ### 🚀 Quick Setup (Recommended)
 
 1. **Clone & Setup**
-```bash
-git clone <repository-url>
-cd Financial_Analysis_System
+   ```bash
+   git clone <repository-url>
+   cd Financial_Analysis_System
 python setup.py
-```
+   ```
 
 2. **Configure API Keys**
-```bash
+   ```bash
 # Copy environment template
 cp backend/.env.example backend/.env
 
 # Edit backend/.env with your API keys
 nano backend/.env  # or use your preferred editor
-```
+   ```
 
 3. **Start the System**
-```bash
+   ```bash
 # Terminal 1: Backend
 cd backend && python main.py
 
@@ -79,7 +79,7 @@ npm run dev
 #### Backend Setup
 
 1. **Install Dependencies**
-```bash
+   ```bash
 cd backend
 pip install -r requirements.txt
 ```
@@ -181,7 +181,7 @@ report_sections = [
     "AI Insights & Gaps",         # LLM recommendations
     "Professional Advice"        # Industry best practices
 ]
-```
+   ```
 
 ## 📋 API Endpoints
 

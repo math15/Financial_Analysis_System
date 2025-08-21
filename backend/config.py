@@ -1,5 +1,9 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env if present
+load_dotenv()
 
 class Settings:
     """Application settings and configuration"""
@@ -22,6 +26,11 @@ class Settings:
     # LLM API Configuration (LLMWhisperer v2)
     LLM_API_KEY = os.getenv("LLM_API_KEY", os.getenv("LLMWHISPERER_API_KEY", "T4HccvP3IujppTUdbQFX8aLIXs_9y0o3yLPQNiWinQQ"))
     LLM_API_URL = os.getenv("LLM_API_URL", "https://llmwhisperer-api.us-central.unstract.com/api/v2")
+
+    # OpenRouter configuration (for Kimi K2 via OpenRouter)
+    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+    OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+    OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "moonshotai/kimi-k2:free")
     
     # Processing Mode Configuration
     USE_LLM_API = os.getenv("USE_LLM_API", "true").lower() == "true"
