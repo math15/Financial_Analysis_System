@@ -378,7 +378,7 @@ class FPDFReportGenerator:
         insights = self._generate_ai_insights(processed_results, quote_summaries)
         pdf.set_font(self.font_family, '', 10)
         for insight in insights:
-            pdf.cell(5, 6, '🤖', 0, 0)
+            pdf.cell(5, 6, '•', 0, 0)  # Replaced robot emoji with bullet point
             pdf.multi_cell(0, 6, insight)
             pdf.ln(1)
     
@@ -2375,7 +2375,7 @@ class FPDFReportGenerator:
         insights = self._generate_ai_insights(processed_results, quote_summaries)
         pdf.set_font(self.font_family, '', 10)
         for insight in insights:
-            pdf.cell(5, 6, '🤖', 0, 0)
+            pdf.cell(5, 6, '•', 0, 0)  # Replaced robot emoji with bullet point
             pdf.multi_cell(0, 6, insight)
             pdf.ln(1)
     
@@ -3135,7 +3135,7 @@ class FPDFReportGenerator:
             sections = quote_info.get('sections', {})
             
             # Quote header row
-        pdf.set_fill_color(220, 220, 220)
+            pdf.set_fill_color(220, 220, 220)
             pdf.set_font(self.font_family, 'B', 9)
             pdf.cell(company_col, 8, f'Q{quote_idx + 1}', 1, 0, 'C', True)
             pdf.cell(description_col, 8, company_name[:30], 1, 0, 'L', True)
@@ -3343,7 +3343,7 @@ class FPDFReportGenerator:
             pdf.set_font(self.font_family, '', 9)
             
             for risk in risk_factors:
-                pdf.cell(5, 5, '⚠', 0, 0)
+                pdf.cell(5, 5, '!', 0, 0)  # Replaced warning symbol with exclamation mark
                 pdf.multi_cell(0, 5, risk)
                 pdf.ln(1)
             
@@ -3374,7 +3374,7 @@ class FPDFReportGenerator:
         unique_gaps = list(set(all_gaps))
         
         for gap in unique_gaps:
-            pdf.cell(5, 6, '❌', 0, 0)
+            pdf.cell(5, 6, 'X', 0, 0)  # Replaced cross mark emoji with X
             pdf.multi_cell(0, 6, gap)
             pdf.ln(1)
         
@@ -3392,271 +3392,15 @@ class FPDFReportGenerator:
             
             pdf.set_font(self.font_family, '', 9)
             for rec in recommendations:
-                pdf.cell(5, 5, '💡', 0, 0)
+                pdf.cell(5, 5, '>', 0, 0)  # Replaced light bulb emoji with arrow
                 pdf.multi_cell(0, 5, rec)
                 pdf.ln(1)
             
             pdf.ln(3)
     
     def _add_financial_analysis(self, pdf, processed_results: List[Dict]):
-        """Add detailed financial analysis and cost breakdown"""
-        pdf.add_page()
-        self._add_section_header(pdf, "DETAILED FINANCIAL ANALYSIS")
-        
-        # Extract financial data
-        financial_data = []
-        for i, result in enumerate(processed_results):
-            llm_analysis = result.get('llm_analysis', {})
-            company_name = llm_analysis.get('company_name', f'Quote {i+1}')
-            total_premium = llm_analysis.get('total_premium', 'N/A')
-            policy_sections = llm_analysis.get('policy_sections', {})
-            
-            # Calculate section costs
-            section_costs = {}
-            total_calculated = 0
-            
-            for section, data in policy_sections.items():
-                if isinstance(data, dict) and data.get('selected', False):
-                    premium_str = data.get('premium', 'N/A')
-                    if premium_str != 'N/A' and 'R' in str(premium_str):
-                        try:
-                            amount = float(str(premium_str).replace('R', '').replace(',', '').strip())
-                            section_costs[section] = amount
-                            total_calculated += amount
-                        except:
-                            section_costs[section] = 0
-            
-            financial_data.append({
-                'company': company_name,
-                'total_premium': total_premium,
-                'section_costs': section_costs,
-                'total_calculated': total_calculated
-            })
-        
-        # Financial comparison table
-        pdf.set_font(self.font_family, 'B', 11)
-        pdf.cell(0, 8, 'Cost Breakdown Analysis:', 0, 1)
-        
-        # Create detailed financial table
-        pdf.set_fill_color(41, 128, 185)
-        pdf.set_text_color(255, 255, 255)
-        pdf.set_font(self.font_family, 'B', 9)
-        
-        pdf.cell(70, 8, 'Policy Section', 1, 0, 'C', True)
-        for data in financial_data:
-            pdf.cell(40, 8, data['company'][:15], 1, 0, 'C', True)
-        pdf.ln()
-        
-        # Get all unique sections
-        all_sections = set()
-        for data in financial_data:
-            all_sections.update(data['section_costs'].keys())
-        
-        # Section-by-section comparison
-        pdf.set_text_color(0, 0, 0)
-        pdf.set_font(self.font_family, '', 8)
-        
-        for section in sorted(all_sections):
-            pdf.cell(70, 6, section[:30], 1, 0, 'L')
-            
-            # Find minimum cost for highlighting
-            section_costs = []
-            for data in financial_data:
-                cost = data['section_costs'].get(section, 0)
-                if cost > 0:
-                    section_costs.append(cost)
-            
-            min_cost = min(section_costs) if section_costs else 0
-            
-            for data in financial_data:
-                cost = data['section_costs'].get(section, 0)
-                cost_str = f"R {cost:,.2f}" if cost > 0 else "N/A"
-                
-                # Highlight best value
-                if cost > 0 and cost == min_cost and len(section_costs) > 1:
-                    pdf.set_fill_color(144, 238, 144)
-                    pdf.set_font(self.font_family, 'B', 8)
-                    pdf.cell(40, 6, cost_str, 1, 0, 'R', True)
-                    pdf.set_font(self.font_family, '', 8)
-                else:
-                    pdf.cell(40, 6, cost_str, 1, 0, 'R')
-        pdf.ln()
-        
-        # Totals row
-        pdf.set_fill_color(41, 128, 185)
-        pdf.set_text_color(255, 255, 255)
-        pdf.set_font(self.font_family, 'B', 10)
-        
-        pdf.cell(70, 8, 'TOTAL PREMIUM', 1, 0, 'C', True)
-        for data in financial_data:
-            pdf.cell(40, 8, data['total_premium'], 1, 0, 'C', True)
-        pdf.ln()
-        
-        # Cost analysis insights
-        pdf.set_text_color(0, 0, 0)
-        pdf.ln(5)
-        pdf.set_font(self.font_family, 'B', 11)
-        pdf.cell(0, 8, 'Financial Analysis Insights:', 0, 1)
-        
-        pdf.set_font(self.font_family, '', 10)
-        
-        # Find most expensive and cheapest
-        premiums = []
-        for data in financial_data:
-            total_str = data['total_premium']
-            if total_str != 'N/A' and 'R' in str(total_str):
-                try:
-                    amount = float(str(total_str).replace('R', '').replace(',', '').strip())
-                    premiums.append((amount, data['company']))
-                except:
-                    pass
-        
-        if len(premiums) > 1:
-            premiums.sort()
-            cheapest = premiums[0]
-            most_expensive = premiums[-1]
-            savings = most_expensive[0] - cheapest[0]
-            
-            pdf.cell(0, 6, f'• Most Affordable: {cheapest[1]} at R {cheapest[0]:,.2f}', 0, 1)
-            pdf.cell(0, 6, f'• Most Expensive: {most_expensive[1]} at R {most_expensive[0]:,.2f}', 0, 1)
-            pdf.cell(0, 6, f'• Potential Savings: R {savings:,.2f} ({((savings/most_expensive[0])*100):.1f}%)', 0, 1)
-            
-            # Cost per section analysis
-            pdf.ln(3)
-            pdf.set_font(self.font_family, 'B', 10)
-            pdf.cell(0, 6, 'Cost Efficiency Analysis:', 0, 1)
-            pdf.set_font(self.font_family, '', 9)
-            
-            for data in financial_data:
-                if data['section_costs']:
-                    avg_section_cost = data['total_calculated'] / len(data['section_costs'])
-                    pdf.cell(0, 5, f'• {data["company"]}: Average cost per section R {avg_section_cost:,.2f}', 0, 1)
-    
-    def _add_risk_analysis_section(self, pdf, processed_results: List[Dict]):
-        """Add comprehensive risk analysis section"""
-        pdf.add_page()
-        self._add_section_header(pdf, "COMPREHENSIVE RISK ANALYSIS")
-        
-        for i, result in enumerate(processed_results):
-            llm_analysis = result.get('llm_analysis', {})
-            company_name = llm_analysis.get('company_name', f'Quote {i+1}')
-            raw_text = result.get('extracted_text', '')
-            
-            # Risk profile header
-            pdf.set_fill_color(231, 76, 60)
-            pdf.set_text_color(255, 255, 255)
-            pdf.set_font(self.font_family, 'B', 12)
-            pdf.cell(0, 8, f'{company_name} - Risk Profile Analysis', 1, 1, 'C', True)
-            
-            pdf.set_text_color(0, 0, 0)
-            pdf.set_font(self.font_family, '', 9)
-            
-            # Coverage adequacy
-            policy_sections = llm_analysis.get('policy_sections', {})
-            coverage_score = self._assess_coverage_adequacy_score(policy_sections)
-            
-            pdf.set_font(self.font_family, 'B', 10)
-            pdf.cell(0, 6, f'Coverage Adequacy Score: {coverage_score}/10', 0, 1)
-            
-            # Risk factors
-            risk_factors = self._analyze_risk_factors(raw_text)
-            if risk_factors:
-                pdf.set_font(self.font_family, 'B', 10)
-                pdf.cell(0, 6, 'Risk Factors:', 0, 1)
-                pdf.set_font(self.font_family, '', 9)
-                
-                for risk in risk_factors:
-                    pdf.cell(5, 5, '⚠', 0, 0)
-                    pdf.multi_cell(0, 5, risk)
-                    pdf.ln(1)
-            
-            # Deductible analysis
-            deductibles = self._extract_deductibles(result)
-            if deductibles:
-                pdf.set_font(self.font_family, 'B', 10)
-                pdf.cell(0, 6, 'Deductible Impact Analysis:', 0, 1)
-                pdf.set_font(self.font_family, '', 9)
-                
-                for deduct_type, amount in deductibles.items():
-                    pdf.cell(0, 5, f'• {deduct_type}: {amount}', 0, 1)
-            
-            pdf.ln(5)
-    
-    def _add_coverage_gaps_analysis(self, pdf, processed_results: List[Dict]):
-        """Add detailed coverage gaps analysis"""
-        pdf.add_page()
-        self._add_section_header(pdf, "COVERAGE GAPS & RECOMMENDATIONS")
-        
-        # Standard business insurance requirements
-        standard_requirements = [
-            'Buildings Combined', 'Office Contents', 'Public Liability', 
-            'Employers Liability', 'Business Interruption', 'Cyber Liability',
-            'Professional Indemnity', 'Product Liability', 'Motor Insurance',
-            'Crime & Fidelity', 'Electronic Equipment', 'Money Coverage'
-        ]
-        
-        # Analysis table
-        pdf.set_font(self.font_family, 'B', 9)
-        pdf.set_fill_color(41, 128, 185)
-        pdf.set_text_color(255, 255, 255)
-        
-        pdf.cell(80, 8, 'Standard Business Requirement', 1, 0, 'C', True)
-        for i, result in enumerate(processed_results):
-            llm_analysis = result.get('llm_analysis', {})
-            company = llm_analysis.get('company_name', f'Q{i+1}')
-            pdf.cell(35, 8, company[:12], 1, 0, 'C', True)
-        pdf.ln()
-        
-        # Check each requirement
-        pdf.set_text_color(0, 0, 0)
-        pdf.set_font(self.font_family, '', 8)
-        
-        for requirement in standard_requirements:
-            pdf.cell(80, 6, requirement, 1, 0, 'L')
-            
-            for result in processed_results:
-                llm_analysis = result.get('llm_analysis', {})
-                policy_sections = llm_analysis.get('policy_sections', {})
-                
-                # Check if requirement is covered
-                covered = False
-                for section_name, section_data in policy_sections.items():
-                    if requirement.lower() in section_name.lower():
-                        if isinstance(section_data, dict) and section_data.get('selected', False):
-                            covered = True
-                            break
-                
-                if covered:
-                    pdf.set_fill_color(144, 238, 144)  # Green
-                    pdf.cell(35, 6, 'COVERED', 1, 0, 'C', True)
-                else:
-                    pdf.set_fill_color(255, 182, 193)  # Red
-                    pdf.cell(35, 6, 'GAP', 1, 0, 'C', True)
-        pdf.ln()
-        
-        # Gap recommendations
-        pdf.ln(5)
-        pdf.set_font(self.font_family, 'B', 12)
-        pdf.cell(0, 8, 'Coverage Gap Recommendations:', 0, 1)
-        
-        pdf.set_font(self.font_family, '', 10)
-        gap_recommendations = [
-            "Consider cyber liability coverage for digital asset protection",
-            "Business interruption insurance is crucial for operational continuity",
-            "Professional indemnity may be required depending on business type",
-            "Key person insurance protects against loss of critical employees",
-            "Equipment breakdown coverage for specialized machinery",
-            "Credit shortfall insurance for outstanding debtors"
-        ]
-        
-        for rec in gap_recommendations:
-            pdf.cell(5, 6, '💡', 0, 0)
-            pdf.multi_cell(0, 6, rec)
-            pdf.ln(1)
-    
-    def _add_financial_analysis(self, pdf, processed_results: List[Dict]):
         """Add comprehensive financial analysis"""
-                pdf.add_page()
+        pdf.add_page()
         self._add_section_header(pdf, "FINANCIAL ANALYSIS & VALUE ASSESSMENT")
         
         # Extract premium data for analysis
@@ -3713,7 +3457,7 @@ class FPDFReportGenerator:
                 pdf.set_fill_color(144, 238, 144)
                 fill = True
                 pdf.set_font(self.font_family, 'B', 9)
-                else:
+            else:
                 fill = False
                 pdf.set_font(self.font_family, '', 9)
             
@@ -3743,7 +3487,7 @@ class FPDFReportGenerator:
             ]
             
             for insight in insights:
-                pdf.cell(5, 6, '📊', 0, 0)
+                pdf.cell(5, 6, '#', 0, 0)  # Replaced chart emoji with hash
                 pdf.multi_cell(0, 6, insight)
                 pdf.ln(1)
     
@@ -4950,9 +4694,10 @@ class FPDFReportGenerator:
             pdf.cell(label_col, 8, title, 1, 0, 'L', True)
             for i in range(num):
                 pdf.cell(col, 8, f"Quote {i+1}", 1, 0, 'C', True)
-        pdf.ln()
-            pdf.set_text_color(0, 0, 0)
-            pdf.set_font(self.font_family, '', 9)
+            pdf.ln()
+        
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_font(self.font_family, '', 9)
         
         header_row('')
         

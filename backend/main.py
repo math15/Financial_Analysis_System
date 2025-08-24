@@ -23,6 +23,7 @@ from pydantic import BaseModel
 from config import settings
 from services.pdf_extractor import PDFExtractor
 from services.fpdf_report_generator import FPDFReportGenerator
+from services.llm_integration import LLMIntegrationService
 from openai import AsyncOpenAI
 import asyncio
 
